@@ -9,6 +9,7 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 [![total npm downloads](https://img.shields.io/npm/dt/dsh-native-image-viewer?logo=npm&label=total%20downloads)](https://www.npmjs.com/package/dsh-native-image-viewer)
 [![status](https://img.shields.io/badge/status-Beta-7c3aed.svg)](#install)
 [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/WSL043/dsh-native-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-native-image-viewer/stargazers)
 
 [Install](#install) · [Privacy](#privacy) · [简体中文](README.zh-CN.md)
 
@@ -68,7 +69,7 @@ Image bytes stay in the current browser profile. The plugin reads only URLs alre
 
 ## Support
 
-Open a [GitHub issue](https://github.com/WSL043/dsh-native-image-viewer/issues/new) with the exact plugin version, DSH version, operating system, image location (message or composer), and the action that failed. Do not include private images, credentials, or full session logs.
+Open the [bug report form](https://github.com/WSL043/dsh-native-image-viewer/issues/new?template=bug-report.yml) with the exact plugin version, DSH version, operating system, image location (message or composer), and the action that failed. Do not include private images, credentials, or full session logs. Report sensitive security problems privately through [GitHub Security Advisories](https://github.com/WSL043/dsh-native-image-viewer/security/advisories/new).
 
 ## License
 
