@@ -121,5 +121,5 @@ jobs:
         shell: bash
         run: |
           if [[ "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft' 2>/dev/null || true)" == true ]]; then
-            gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag -y
+            gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" -y || true
           fi
