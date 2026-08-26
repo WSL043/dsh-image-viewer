@@ -34,6 +34,32 @@ test('ships zoom, pan, keyboard, gallery, download, and notes', async () => {
   assert.doesNotMatch(source, /\[request, service, fit, setZoomAt, transform\.zoom\]/u)
 })
 
+test('keeps the official lightbox hierarchy instead of replacing the whole page', async () => {
+  const [source, styles] = await Promise.all([
+    readFile(new URL('src/client.jsx', root), 'utf8'),
+    readFile(new URL('src/styles.js', root), 'utf8'),
+  ])
+  assert.match(source, /className="niv-close-floating"/u)
+  assert.match(source, /event\.target === event\.currentTarget/u)
+  assert.match(styles, /backdrop-filter:blur\(13px\)/u)
+  assert.match(styles, /\.niv-close-floating\{position:absolute;top:20px;right:20px/u)
+  assert.match(styles, /\.niv-topbar\{position:absolute;right:50%;bottom:22px/u)
+  assert.doesNotMatch(styles, /grid-template-rows:58px/u)
+})
+
+test('edits each region note beside its numbered image marker', async () => {
+  const [source, styles] = await Promise.all([
+    readFile(new URL('src/client.jsx', root), 'utf8'),
+    readFile(new URL('src/styles.js', root), 'utf8'),
+  ])
+  assert.match(source, /className="niv-inline-note"/u)
+  assert.match(source, /annotation\.x < 0\.38/u)
+  assert.match(source, /annotation\.x > 0\.62/u)
+  assert.match(source, /data-y=\{annotation\.y < 0\.28/u)
+  assert.doesNotMatch(source, /className="niv-sidebar"/u)
+  assert.match(styles, /\.niv-inline-note\{position:absolute;bottom:34px/u)
+})
+
 test('public docs do not contain private maintenance history', async () => {
   const docs = await Promise.all(['README.md', 'README.zh-CN.md'].map(file => readFile(new URL(file, root), 'utf8')))
   for (const text of docs) {
