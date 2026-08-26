@@ -73,6 +73,14 @@ test('public docs do not contain private maintenance history', async () => {
   }
 })
 
+test('issue intake defaults to concise English forms without title prefixes', async () => {
+  const forms = await Promise.all(['bug-report.yml', 'feature-request.yml'].map(file => readFile(new URL(`.github/ISSUE_TEMPLATE/${file}`, root), 'utf8')))
+  assert.match(forms[0], /^name: Bug report$/mu)
+  assert.match(forms[1], /^name: Feature request$/mu)
+  for (const form of forms) assert.doesNotMatch(form, /^title:/mu)
+  assert.match(forms[0], /Plugin version[\s\S]*DSH version/u)
+})
+
 test('release is gated by checks, an immutable draft, and npm beta publishing', async () => {
   const [ci, publish] = await Promise.all([
     readFile(new URL('.github/workflows/ci.yml', root), 'utf8'),
@@ -91,6 +99,11 @@ test('release is gated by checks, an immutable draft, and npm beta publishing', 
   assert.match(publish, /\.release\/install\.ps1/u)
   assert.match(publish, /releases\/download\/v\$VERSION\/install\.ps1/u)
   assert.doesNotMatch(publish, /releases\/latest\/download\/install\.ps1/u)
+  assert.match(publish, /contributor_prs:[\s\S]*merged contributor PR numbers/u)
+  assert.match(publish, /gh pr view "\$pr_number"[\s\S]*author,mergedAt,number,url/u)
+  assert.doesNotMatch(publish, /reported_issues|REPORTED_ISSUES|Issue reporters/u)
+  assert.match(publish, /real line breaks, not literal/u)
+  assert.match(publish, /## What's new[\s\S]*## Install or update[\s\S]*## 中文[\s\S]*## 更新内容[\s\S]*## 安装或更新/u)
   assert.match(publish, /gh release delete "\$TAG" --repo "\$GITHUB_REPOSITORY" -y \|\| true/u)
   assert.doesNotMatch(publish, /--cleanup-tag/u)
 })

@@ -3,6 +3,10 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
+      contributor_prs:
+        description: Comma-separated merged contributor PR numbers to credit
+        required: false
+        type: string
       release_notes_en:
         description: English user-facing release summary
         required: true
@@ -82,17 +86,50 @@ jobs:
               '.name == "dsh-native-image-viewer" and .version == $version' >/dev/null
       - name: Write user-facing release notes
         env:
+          CONTRIBUTOR_PRS: ${{ inputs.contributor_prs }}
+          GH_TOKEN: ${{ github.token }}
           NOTES_EN: ${{ inputs.release_notes_en }}
           NOTES_ZH: ${{ inputs.release_notes_zh }}
           VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
+          set -euo pipefail
+          if [[ "$NOTES_EN" == *'\n'* || "$NOTES_ZH" == *'\n'* ]]; then
+            echo 'Release notes must contain real line breaks, not literal \n sequences.' >&2
+            exit 1
+          fi
+          : > .release/contributors.en.md
+          : > .release/contributors.zh-CN.md
+          if [[ -n "${CONTRIBUTOR_PRS:-}" ]]; then
+            IFS=',' read -ra contributor_pr_numbers <<< "$CONTRIBUTOR_PRS"
+            for raw_pr in "${contributor_pr_numbers[@]}"; do
+              pr_number="$(xargs <<< "$raw_pr")"
+              [[ "$pr_number" =~ ^[1-9][0-9]*$ ]] || {
+                echo "Invalid contributor PR number: $raw_pr" >&2
+                exit 1
+              }
+              pr_json="$(gh pr view "$pr_number" --repo "$GITHUB_REPOSITORY" --json author,mergedAt,number,url)"
+              merged_at="$(jq -r '.mergedAt' <<< "$pr_json")"
+              test "$merged_at" != 'null'
+              author="$(jq -r '.author.login' <<< "$pr_json")"
+              number="$(jq -r '.number' <<< "$pr_json")"
+              url="$(jq -r '.url' <<< "$pr_json")"
+              printf -- '- Thanks to [@%s](https://github.com/%s) for contributing in [#%s](%s).\n' "$author" "$author" "$number" "$url" >> .release/contributors.en.md
+              printf -- '- 感谢 [@%s](https://github.com/%s) 在 [#%s](%s) 提交贡献。\n' "$author" "$author" "$number" "$url" >> .release/contributors.zh-CN.md
+            done
+          fi
           cat > .release/release.md <<NOTES
           ## What's new
 
           $NOTES_EN
+          NOTES
+          if [[ -s .release/contributors.en.md ]]; then
+            printf '\n## Contributors\n\n' >> .release/release.md
+            cat .release/contributors.en.md >> .release/release.md
+          fi
+          cat >> .release/release.md <<NOTES
 
-          ## Install
+          ## Install or update
 
           \`\`\`powershell
           irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/download/v$VERSION/install.ps1' | iex
@@ -111,8 +148,14 @@ jobs:
           ## 更新内容
 
           $NOTES_ZH
+          NOTES
+          if [[ -s .release/contributors.zh-CN.md ]]; then
+            printf '\n## 贡献者\n\n' >> .release/release.md
+            cat .release/contributors.zh-CN.md >> .release/release.md
+          fi
+          cat >> .release/release.md <<NOTES
 
-          ## 安装
+          ## 安装或更新
 
           \`\`\`powershell
           irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/download/v$VERSION/install.ps1' | iex
@@ -133,7 +176,7 @@ jobs:
         shell: bash
         run: |
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "$TAG" --notes-file .release/release.md --draft --prerelease
+            --title "DSH Native Image Viewer $TAG" --notes-file .release/release.md --draft --prerelease
           gh release upload "$TAG" .release/dsh-native-image-viewer.tgz .release/install.ps1 --repo "$GITHUB_REPOSITORY"
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets \
             | jq -e '.isDraft == true and .isPrerelease == true and (.assets | any(.name == "dsh-native-image-viewer.tgz" and .size > 0)) and (.assets | any(.name == "install.ps1" and .size > 0))' >/dev/null
