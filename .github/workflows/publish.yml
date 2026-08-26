@@ -56,6 +56,7 @@ jobs:
           mkdir -p .release
           pnpm pack --pack-destination .release
           mv .release/dsh-native-image-viewer-*.tgz .release/dsh-native-image-viewer.tgz
+          cp install.ps1 .release/install.ps1
           tar -xOf .release/dsh-native-image-viewer.tgz package/package.json \
             | jq -e --arg version "${{ steps.version.outputs.version }}" \
               '.name == "dsh-native-image-viewer" and .version == $version' >/dev/null
@@ -73,6 +74,12 @@ jobs:
 
           ## Install
 
+          \`\`\`powershell
+          irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/latest/download/install.ps1' | iex
+          \`\`\`
+
+          Or use the official DSH command:
+
           \`\`\`sh
           dsh plugin --profile web add dsh-native-image-viewer@$VERSION
           \`\`\`
@@ -86,6 +93,12 @@ jobs:
           $NOTES_ZH
 
           ## 安装
+
+          \`\`\`powershell
+          irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/latest/download/install.ps1' | iex
+          \`\`\`
+
+          也可以使用 DSH 官方命令：
 
           \`\`\`sh
           dsh plugin --profile web add dsh-native-image-viewer@$VERSION
@@ -101,9 +114,9 @@ jobs:
         run: |
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "$TAG" --notes-file .release/release.md --draft --prerelease
-          gh release upload "$TAG" .release/dsh-native-image-viewer.tgz --repo "$GITHUB_REPOSITORY"
+          gh release upload "$TAG" .release/dsh-native-image-viewer.tgz .release/install.ps1 --repo "$GITHUB_REPOSITORY"
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets \
-            | jq -e '.isDraft == true and .isPrerelease == true and (.assets | any(.name == "dsh-native-image-viewer.tgz" and .size > 0))' >/dev/null
+            | jq -e '.isDraft == true and .isPrerelease == true and (.assets | any(.name == "dsh-native-image-viewer.tgz" and .size > 0)) and (.assets | any(.name == "install.ps1" and .size > 0))' >/dev/null
       - name: Use an OIDC-capable npm CLI
         run: npm install --global npm@12.0.2
       - name: Check whether npm version already exists

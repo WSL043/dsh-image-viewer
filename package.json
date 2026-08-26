@@ -26,6 +26,7 @@
     "cordis.patch.yml",
     "README.md",
     "README.zh-CN.md",
+    "compatibility.json",
     "AGENTS.md",
     "LICENSE",
     "SECURITY.md",
