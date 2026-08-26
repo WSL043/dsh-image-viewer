@@ -72,4 +72,4 @@ dsh plugin --profile web remove dsh-native-image-viewer
 
 ## 许可证
 
-[English](README.md) · [反馈问题](https://github.com/WSL043/dsh-native-image-viewer/issues/new) · [MIT](LICENSE)
+[English](README.md) · [反馈问题](https://github.com/WSL043/dsh-native-image-viewer/issues/new?template=bug-report.yml) · [功能建议](https://github.com/WSL043/dsh-native-image-viewer/issues/new?template=feature-request.yml) · [MIT](LICENSE)

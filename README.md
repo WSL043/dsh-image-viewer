@@ -72,4 +72,4 @@ Open a [GitHub issue](https://github.com/WSL043/dsh-native-image-viewer/issues/n
 
 ## License
 
-[简体中文](README.zh-CN.md) · [Report a bug](https://github.com/WSL043/dsh-native-image-viewer/issues/new) · [MIT](LICENSE)
+[简体中文](README.zh-CN.md) · [Report a bug](https://github.com/WSL043/dsh-native-image-viewer/issues/new?template=bug-report.yml) · [Request a feature](https://github.com/WSL043/dsh-native-image-viewer/issues/new?template=feature-request.yml) · [MIT](LICENSE)

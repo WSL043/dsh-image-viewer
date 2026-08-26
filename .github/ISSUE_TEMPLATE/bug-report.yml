@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a reproducible viewer, annotation, installation, or update problem
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Do not include private conversation text, credentials, account identifiers, or unredacted images.
+
+  - type: input
+    id: plugin_version
+    attributes:
+      label: Plugin version
+      description: Copy the exact installed version.
+    validations:
+      required: true
+
+  - type: input
+    id: dsh_version
+    attributes:
+      label: DSH version
+      description: Copy the exact version shown by your installation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the shortest sequence that reproduces the problem and say whether the image is in a message or the composer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or sanitized output
+      description: Add useful evidence only after removing private conversation content and identifiers.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked that this report contains no private conversation text, credentials, or account identifiers.
+          required: true
