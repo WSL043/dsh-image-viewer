@@ -4,6 +4,14 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 
 > Beta: the viewer targets the latest public DSH release. Unsupported image markup is left untouched instead of being guessed.
 
+<p align="center">
+  <img src="docs/assets/image-viewer-dark.png" width="900" alt="DSH Native Image Viewer with fit, original-size, zoom, and download controls">
+</p>
+
+<p align="center">
+  <img src="docs/assets/image-viewer-note.png" width="900" alt="A numbered region note edited directly beside its image marker">
+</p>
+
 ## Features
 
 - Wheel zoom centered on the pointer, drag-to-pan, touch pinch, and double-click 100% view.
