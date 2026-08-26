@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_notes_en:
+        description: English user-facing release summary
+        required: true
+        type: string
+      release_notes_zh:
+        description: Chinese user-facing release summary
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 11.19.0
+          run_install: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - name: Resolve immutable version
+        id: version
+        shell: bash
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          version="$(node -p "require('./package.json').version")"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run check
+      - run: git diff --exit-code -- lib
+      - name: Build immutable package
+        shell: bash
+        run: |
+          rm -rf .release
+          mkdir -p .release
+          pnpm pack --pack-destination .release
+          mv .release/dsh-native-image-viewer-*.tgz .release/dsh-native-image-viewer.tgz
+          tar -xOf .release/dsh-native-image-viewer.tgz package/package.json \
+            | jq -e --arg version "${{ steps.version.outputs.version }}" \
+              '.name == "dsh-native-image-viewer" and .version == $version' >/dev/null
+      - name: Write user-facing release notes
+        env:
+          NOTES_EN: ${{ inputs.release_notes_en }}
+          NOTES_ZH: ${{ inputs.release_notes_zh }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          cat > .release/release.md <<NOTES
+          ## What's new
+
+          $NOTES_EN
+
+          ## Install
+
+          \`\`\`sh
+          dsh plugin --profile web add dsh-native-image-viewer@$VERSION
+          \`\`\`
+
+          Restart DSH manually after saving active work.
+
+          ## 中文
+
+          ## 更新内容
+
+          $NOTES_ZH
+
+          ## 安装
+
+          \`\`\`sh
+          dsh plugin --profile web add dsh-native-image-viewer@$VERSION
+          \`\`\`
+
+          保存正在进行的工作后手动重启 DSH。
+          NOTES
+      - name: Create verified draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "$TAG" --notes-file .release/release.md --draft --prerelease
+          gh release upload "$TAG" .release/dsh-native-image-viewer.tgz --repo "$GITHUB_REPOSITORY"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets \
+            | jq -e '.isDraft == true and .isPrerelease == true and (.assets | any(.name == "dsh-native-image-viewer.tgz" and .size > 0))' >/dev/null
+      - name: Use an OIDC-capable npm CLI
+        run: npm install --global npm@12.0.2
+      - name: Publish Beta to npm
+        run: npm publish .release/dsh-native-image-viewer.tgz --access public --tag beta
+      - name: Publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
+      - name: Cleanup failed draft
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          if [[ "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft' 2>/dev/null || true)" == true ]]; then
+            gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag -y
+          fi

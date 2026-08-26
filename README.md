@@ -8,7 +8,7 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 
 - Wheel zoom centered on the pointer, drag-to-pan, touch pinch, and double-click 100% view.
 - Fit and original-size controls, original-file download, keyboard navigation, and multi-image galleries.
-- Region notes with a collapsed-by-default sidebar. Clicking a point opens and focuses its note directly.
+- One-shot region marking with each note edited beside its numbered image marker.
 - Light and dark themes through DSH design tokens, responsive layout, focus containment, and reduced-motion support.
 - Optional `nativeImageViewer` client service so image-producing plugins can add their own continuation action.
 
@@ -16,10 +16,10 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 
 ## Install
 
-After the Beta package is published:
+Install the Beta:
 
 ```sh
-dsh plugin --profile web add dsh-native-image-viewer@0.1.0-beta.0
+dsh plugin --profile web add dsh-native-image-viewer@0.1.0-beta.1
 ```
 
 Restart DSH manually after saving active work. The installer never needs access to provider credentials or image-generation accounts.
