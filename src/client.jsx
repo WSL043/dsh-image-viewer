@@ -54,7 +54,6 @@ function ViewerOverlay({ service, t }) {
   const [transform, setTransform] = useState({ zoom: 1, x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
   const [annotating, setAnnotating] = useState(false)
-  const [sidebar, setSidebar] = useState(false)
   const [annotationsByImage, setAnnotationsByImage] = useState({})
   const [selected, setSelected] = useState()
   const [focusNote, setFocusNote] = useState()
@@ -77,7 +76,6 @@ function ViewerOverlay({ service, t }) {
     setTransform({ zoom: 1, x: 0, y: 0 })
     setDragging(false)
     setAnnotating(false)
-    setSidebar(false)
     setAnnotationsByImage({})
     setSelected(undefined)
     setPrompt('')
@@ -171,13 +169,12 @@ function ViewerOverlay({ service, t }) {
     const field = rootRef.current?.querySelector(`[data-note-id="${CSS.escape(focusNote)}"] textarea`)
     field?.focus()
     setFocusNote(undefined)
-  }, [focusNote, sidebar, annotations.length])
+  }, [focusNote, selected, annotations.length])
 
   useEffect(() => {
     setTransform({ zoom: 1, x: 0, y: 0 })
     setDragging(false)
     setAnnotating(false)
-    setSidebar(false)
     setSelected(undefined)
     setEditorError(false)
   }, [item?.id])
@@ -216,7 +213,7 @@ function ViewerOverlay({ service, t }) {
     if (pointersRef.current.size === 0) { gestureRef.current = undefined; setDragging(false) }
   }
   const addAnnotation = event => {
-    if (!annotating || event.target.closest('.niv-pin')) return
+    if (!annotating || event.target.closest('.niv-annotation')) return
     const bounds = surfaceRef.current?.getBoundingClientRect()
     if (bounds === undefined) return
     const annotation = {
@@ -227,7 +224,6 @@ function ViewerOverlay({ service, t }) {
     }
     setAnnotations(current => [...current, annotation])
     setSelected(annotation.id)
-    setSidebar(true)
     setFocusNote(annotation.id)
   }
   const submit = async () => {
@@ -255,23 +251,30 @@ function ViewerOverlay({ service, t }) {
   const meta = [item.width && item.height ? `${item.width} × ${item.height}` : undefined, bytesLabel(item.bytes)].filter(Boolean).join(' · ')
   const showCounter = request.items.length > 1
   return <div ref={rootRef} className="niv-root" role="dialog" aria-modal="true" aria-label={t('dialog')} tabIndex={-1}>
-    <header className="niv-topbar">
-      <div className="niv-title"><strong>{item.name}</strong>{meta !== '' ? <small>{meta}</small> : null}</div>
+    <div className="niv-title niv-sr-only"><strong>{item.name}</strong>{meta !== '' ? <small>{meta}</small> : null}</div>
+    <header className="niv-topbar" role="toolbar" aria-label={t('dialog')}>
       <div className="niv-actions">
-        {request.annotations ? <button type="button" className="niv-button" data-active={annotating} aria-label={t('annotate')} aria-pressed={annotating} onClick={() => { setAnnotating(value => !value); if (annotations.length > 0) setSidebar(true) }}><IconEditOutline16 /><span className="niv-label">{t('annotate')}</span></button> : null}
-        {annotations.length > 0 ? <button type="button" className="niv-button" data-active={sidebar} onClick={() => setSidebar(value => !value)}>{annotations.length} <span className="niv-label">{t('regions')}</span></button> : null}
+        {request.annotations ? <button type="button" className="niv-button" data-active={annotating} aria-label={t('annotate')} aria-pressed={annotating} onClick={() => setAnnotating(value => !value)}><IconEditOutline16 /><span className="niv-label">{t('annotate')}</span></button> : null}
+        {annotations.length > 0 ? <button type="button" className="niv-button" data-active={selected !== undefined} onClick={() => { const first = annotations[0]; setSelected(current => current === undefined ? first.id : undefined); if (selected === undefined) setFocusNote(first.id) }}>{annotations.length} <span className="niv-label">{t('regions')}</span></button> : null}
         <button type="button" className="niv-button" aria-label={t('fit')} onClick={fit}><IconFullscreenOutline16 /><span className="niv-label">{t('fit')}</span></button>
         <button type="button" className="niv-button" onClick={actual}>{t('actual')}</button>
         <span className="niv-zoom">{Math.round(transform.zoom * 100)}%</span>
         <a className="niv-download" href={item.src} download={downloadName(item.name)}><IconDownloadOutline16 /><span className="niv-label">{t('download')}</span></a>
-        <button type="button" className="niv-button niv-icon-only" aria-label={t('close')} onClick={() => service.close()}><IconCloseOutline16 /></button>
       </div>
     </header>
-    <div className="niv-workspace" data-sidebar={sidebar} data-editor={request.editor !== undefined}>
-      <main ref={stageRef} className="niv-stage" data-dragging={dragging} data-annotating={annotating} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endPointer} onPointerCancel={endPointer} onDoubleClick={() => { if (transform.zoom === 1) actual(); else fit() }}>
+    <button type="button" className="niv-close-floating" aria-label={t('close')} onClick={() => service.close()}><IconCloseOutline16 /></button>
+    <div className="niv-workspace" data-editor={request.editor !== undefined}>
+      <main ref={stageRef} className="niv-stage" data-dragging={dragging} data-annotating={annotating} onClick={event => { if (event.target === event.currentTarget && !annotating && transform.zoom === 1) service.close() }} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endPointer} onPointerCancel={endPointer} onDoubleClick={() => { if (transform.zoom === 1) actual(); else fit() }}>
         <div ref={surfaceRef} className="niv-surface" onClick={addAnnotation} style={{ transform: `translate3d(${transform.x}px,${transform.y}px,0) scale(${transform.zoom})` }}>
           <img ref={imageRef} className="niv-image" src={item.src} alt={item.name} draggable="false" />
-          {annotations.map((annotation, position) => <button type="button" className="niv-pin" data-active={selected === annotation.id} aria-label={fill(t('note'), { value: position + 1 })} style={{ left: `${annotation.x * 100}%`, top: `${annotation.y * 100}%`, transform: `translate(-50%,-50%) scale(${1 / transform.zoom})` }} onClick={event => { event.stopPropagation(); setSelected(annotation.id); setSidebar(true); setFocusNote(annotation.id) }} key={annotation.id}>{position + 1}</button>)}
+          {annotations.map((annotation, position) => <div className="niv-annotation" data-x={annotation.x < 0.38 ? 'right' : annotation.x > 0.62 ? 'left' : 'center'} data-y={annotation.y < 0.28 ? 'down' : 'up'} style={{ left: `${annotation.x * 100}%`, top: `${annotation.y * 100}%`, transform: `translate(-50%,-50%) scale(${1 / transform.zoom})` }} key={annotation.id}>
+            <button type="button" className="niv-pin" data-active={selected === annotation.id} aria-label={fill(t('note'), { value: position + 1 })} onClick={event => { event.stopPropagation(); const opening = selected !== annotation.id; setSelected(opening ? annotation.id : undefined); if (opening) setFocusNote(annotation.id) }}>{position + 1}</button>
+            {selected === annotation.id ? <div className="niv-inline-note" data-note-id={annotation.id} onClick={event => event.stopPropagation()}>
+              <span className="niv-inline-index">{position + 1}</span>
+              <textarea value={annotation.note} rows={1} aria-label={fill(t('note'), { value: position + 1 })} placeholder={t('notePlaceholder')} onChange={event => { const note = event.target.value; setAnnotations(current => current.map(entry => entry.id === annotation.id ? { ...entry, note } : entry)) }} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSelected(undefined) } }} />
+              <button type="button" className="niv-note-remove" aria-label={t('removeNote')} onClick={event => { event.stopPropagation(); setAnnotations(current => current.filter(entry => entry.id !== annotation.id)); setSelected(undefined) }}><IconCloseOutline16 /></button>
+            </div> : null}
+          </div>)}
         </div>
         {showCounter ? <>
           <button type="button" className="niv-button niv-icon-only niv-nav niv-prev" aria-label={t('previous')} onClick={event => { event.stopPropagation(); setIndex(value => (value - 1 + request.items.length) % request.items.length) }}><IconChevronLeftOutline14 /></button>
@@ -279,15 +282,7 @@ function ViewerOverlay({ service, t }) {
           <span className="niv-counter">{index + 1} / {request.items.length}</span>
         </> : annotating ? <span className="niv-hint">{t('regionHint')}</span> : transform.zoom === 1 ? <span className="niv-hint">{t('zoomHint')}</span> : null}
       </main>
-      {sidebar ? <aside className="niv-sidebar" aria-label={t('regions')}>
-        <header className="niv-sidebar-head"><div><strong>{t('regions')}</strong><small>{t('regionHint')}</small></div><button type="button" className="niv-button niv-icon-only" aria-label={t('hideNotes')} onClick={() => setSidebar(false)}><IconCloseOutline16 /></button></header>
-        {annotations.length === 0 ? <p className="niv-sidebar-empty">{t('regionHint')}</p> : <div className="niv-note-list">{annotations.map((annotation, position) => <article className="niv-note" data-note-id={annotation.id} data-active={selected === annotation.id} key={annotation.id} onClick={() => setSelected(annotation.id)}>
-          <span className="niv-note-index">{position + 1}</span>
-          <textarea value={annotation.note} rows={3} aria-label={fill(t('note'), { value: position + 1 })} placeholder={t('notePlaceholder')} onFocus={() => setSelected(annotation.id)} onChange={event => { const note = event.target.value; setAnnotations(current => current.map(entry => entry.id === annotation.id ? { ...entry, note } : entry)) }} />
-          <button type="button" className="niv-button niv-icon-only niv-note-remove" aria-label={t('removeNote')} onClick={event => { event.stopPropagation(); setAnnotations(current => current.filter(entry => entry.id !== annotation.id)); if (selected === annotation.id) setSelected(undefined) }}><IconCloseOutline16 /></button>
-        </article>)}</div>}
-        {annotations.some(annotation => annotation.note.trim() !== '') ? <footer className="niv-sidebar-foot"><button type="button" className="niv-button" onClick={() => { void copyNotes() }}><IconCopyOutline16 />{copied ? t('copied') : t('copyNotes')}</button></footer> : null}
-      </aside> : null}
+      {annotations.some(annotation => annotation.note.trim() !== '') ? <button type="button" className="niv-copy-notes" onClick={() => { void copyNotes() }}><IconCopyOutline16 />{copied ? t('copied') : t('copyNotes')}</button> : null}
       {request.editor !== undefined ? <footer className="niv-editor">
         <Input value={prompt} placeholder={request.editor.placeholder} onChange={event => setPrompt(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit() } }} />
         {editorError ? <span className="niv-editor-error" role="alert">{request.editor.errorLabel ?? t('failed')}</span> : null}
