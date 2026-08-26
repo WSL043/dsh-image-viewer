@@ -1,0 +1,3 @@
+- insert:
+    - id: wsl043-native-image-viewer
+      name: dsh-native-image-viewer

@@ -1,0 +1,9 @@
+node_modules/
+lib/
+.artifacts/
+.playwright-cli/
+*.tgz
+design-qa.md
+evidence/
+evidence-*.png
+design-qa-comparison.png
