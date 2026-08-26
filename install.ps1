@@ -2,7 +2,7 @@
 param([string]$DshHome)
 
 $ErrorActionPreference = 'Stop'
-$packageSpec = 'dsh-native-image-viewer@0.1.0-beta.1'
+$packageSpec = 'dsh-native-image-viewer@0.1.0-beta.2'
 $dshRelease = '0.1.1-rc.2'
 $pnpmVersion = '11.19.0'
 $pnpmUrl = 'https://registry.npmjs.org/pnpm/-/pnpm-11.19.0.tgz'
