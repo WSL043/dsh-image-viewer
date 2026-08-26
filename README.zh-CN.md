@@ -9,6 +9,7 @@
 [![npm 总下载量](https://img.shields.io/npm/dt/dsh-native-image-viewer?logo=npm&label=%E6%80%BB%E4%B8%8B%E8%BD%BD%E9%87%8F)](https://www.npmjs.com/package/dsh-native-image-viewer)
 [![状态](https://img.shields.io/badge/%E7%8A%B6%E6%80%81-Beta-7c3aed.svg)](#安装)
 [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/WSL043/dsh-native-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-native-image-viewer/stargazers)
 
 [安装](#安装) · [隐私](#隐私) · [English](README.md)
 
@@ -68,7 +69,7 @@ dsh plugin --profile web remove dsh-native-image-viewer
 
 ## 反馈
 
-请在 [GitHub Issue](https://github.com/WSL043/dsh-native-image-viewer/issues/new) 中提供准确的插件版本、DSH 版本、操作系统、图片所在位置（消息或输入框）以及失败的操作。不要提交私人图片、凭据或完整会话日志。
+请通过[问题反馈表单](https://github.com/WSL043/dsh-native-image-viewer/issues/new?template=bug-report.yml)提供准确的插件版本、DSH 版本、操作系统、图片所在位置（消息或输入框）以及失败的操作。不要提交私人图片、凭据或完整会话日志。敏感安全问题请通过 [GitHub Security Advisories](https://github.com/WSL043/dsh-native-image-viewer/security/advisories/new) 私下报告。
 
 ## 许可证
 
