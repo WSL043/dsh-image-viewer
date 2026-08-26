@@ -55,6 +55,7 @@ test('edits each region note beside its numbered image marker', async () => {
   assert.match(source, /className="niv-inline-note"/u)
   assert.match(source, /annotation\.x < 0\.38/u)
   assert.match(source, /annotation\.x > 0\.62/u)
+  assert.match(source, /if \(event\.button !== 0 \|\| annotating\) return\s+event\.currentTarget\.setPointerCapture/u)
   assert.match(source, /data-y=\{annotation\.y < 0\.28/u)
   assert.doesNotMatch(source, /className="niv-sidebar"/u)
   assert.match(styles, /\.niv-inline-note\{position:absolute;bottom:34px/u)
