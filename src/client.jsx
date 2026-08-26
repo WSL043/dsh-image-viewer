@@ -184,7 +184,7 @@ function ViewerOverlay({ service, t }) {
     setZoomAt(transform.zoom * Math.exp(-event.deltaY * 0.0015), event.clientX, event.clientY)
   }
   const onPointerDown = event => {
-    if (event.button !== 0) return
+    if (event.button !== 0 || annotating) return
     event.currentTarget.setPointerCapture(event.pointerId)
     pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     if (pointersRef.current.size === 2) {
