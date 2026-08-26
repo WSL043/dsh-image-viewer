@@ -11,6 +11,7 @@ test('declares one optional web client plugin', async () => {
   assert.equal(pkg.dsh.client.platform, 'web')
   assert.ok(pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-layout'))
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
+  assert.ok(pkg.files.includes('compatibility.json'))
 })
 
 test('uses the additive shell overlay and an optional service', async () => {
@@ -84,6 +85,19 @@ test('release is gated by checks, an immutable draft, and npm beta publishing', 
   assert.match(publish, /if: steps\.npm-version\.outputs\.needed == 'true'/u)
   assert.match(publish, /npm publish \.release\/dsh-native-image-viewer\.tgz --access public --tag beta/u)
   assert.match(publish, /--draft=false --prerelease/u)
+  assert.match(publish, /\.release\/install\.ps1/u)
   assert.match(publish, /gh release delete "\$TAG" --repo "\$GITHUB_REPOSITORY" -y \|\| true/u)
   assert.doesNotMatch(publish, /--cleanup-tag/u)
+})
+
+test('the Windows helper is version-pinned and delegates to the official DSH plugin command', async () => {
+  const [installer, pkg, compatibility] = await Promise.all([
+    readFile(new URL('install.ps1', root), 'utf8'),
+    readFile(new URL('package.json', root), 'utf8').then(JSON.parse),
+    readFile(new URL('compatibility.json', root), 'utf8').then(JSON.parse),
+  ])
+  assert.match(installer, new RegExp(`dsh-native-image-viewer@${pkg.version.replaceAll('.', '\\.')}`, 'u'))
+  assert.match(installer, new RegExp(`\\$dshRelease = '${compatibility.latestTested.replaceAll('.', '\\.')}'`, 'u'))
+  assert.match(installer, /plugin', '--profile', 'web', 'add'/u)
+  assert.doesNotMatch(installer, /\bnpx\b|DSH_PORTABLE_ROOT|\.\\dsh\.exe/u)
 })
