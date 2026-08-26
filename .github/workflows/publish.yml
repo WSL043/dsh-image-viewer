@@ -20,7 +20,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  official-dsh-acceptance:
+    name: Official DSH end-to-end acceptance
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 11.19.0
+          run_install: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run build
+      - run: pnpm pack --pack-destination .artifacts
+      - name: Accept install, Web startup, remove, and reinstall
+        shell: pwsh
+        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .artifacts/dsh-native-image-viewer-*.tgz).FullName
   release:
+    needs: official-dsh-acceptance
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -75,7 +95,7 @@ jobs:
           ## Install
 
           \`\`\`powershell
-          irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/latest/download/install.ps1' | iex
+          irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/download/v$VERSION/install.ps1' | iex
           \`\`\`
 
           Or use the official DSH command:
@@ -95,7 +115,7 @@ jobs:
           ## 安装
 
           \`\`\`powershell
-          irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/latest/download/install.ps1' | iex
+          irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/download/v$VERSION/install.ps1' | iex
           \`\`\`
 
           也可以使用 DSH 官方命令：
