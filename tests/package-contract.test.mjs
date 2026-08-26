@@ -7,7 +7,7 @@ const root = new URL('../', import.meta.url)
 test('declares one optional web client plugin', async () => {
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
   assert.equal(pkg.name, 'dsh-native-image-viewer')
-  assert.equal(pkg.version, '0.1.0-beta.0')
+  assert.equal(pkg.version, '0.1.0-beta.1')
   assert.equal(pkg.dsh.client.platform, 'web')
   assert.ok(pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-layout'))
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
@@ -28,9 +28,11 @@ test('ships zoom, pan, keyboard, gallery, download, and notes', async () => {
   }
   assert.match(source, /import \{ CSS as VIEWER_CSS \} from '\.\/styles\.js'/u)
   assert.match(source, /CSS\.escape\(focusNote\)/u)
-  assert.match(source, /aria-label=\{t\('annotate'\)\}/u)
+  assert.match(source, /aria-label=\{annotating \? t\('cancelAnnotate'\) : t\('annotate'\)\}/u)
   assert.match(source, /aria-label=\{t\('fit'\)\}/u)
   assert.match(source, /transformRef\.current\.zoom/u)
+  assert.match(source, /addEventListener\('wheel', onWheel, \{ passive: false \}\)/u)
+  assert.doesNotMatch(source, /onWheel=\{onWheel\}/u)
   assert.doesNotMatch(source, /\[request, service, fit, setZoomAt, transform\.zoom\]/u)
 })
 
@@ -57,6 +59,8 @@ test('edits each region note beside its numbered image marker', async () => {
   assert.match(source, /annotation\.x > 0\.62/u)
   assert.match(source, /if \(event\.button !== 0 \|\| annotating\) return\s+event\.currentTarget\.setPointerCapture/u)
   assert.match(source, /data-y=\{annotation\.y < 0\.28/u)
+  assert.match(source, /setAnnotations\(current => \[\.\.\.current, annotation\]\)\s+setAnnotating\(false\)/u)
+  assert.match(source, /cancelAnnotate/u)
   assert.doesNotMatch(source, /className="niv-sidebar"/u)
   assert.match(styles, /\.niv-inline-note\{position:absolute;bottom:34px/u)
 })
@@ -66,4 +70,16 @@ test('public docs do not contain private maintenance history', async () => {
   for (const text of docs) {
     assert.doesNotMatch(text, /acceptance|CI gate|polling|Portable task|internal maintenance/iu)
   }
+})
+
+test('release is gated by checks, an immutable draft, and npm beta publishing', async () => {
+  const [ci, publish] = await Promise.all([
+    readFile(new URL('.github/workflows/ci.yml', root), 'utf8'),
+    readFile(new URL('.github/workflows/publish.yml', root), 'utf8'),
+  ])
+  assert.match(ci, /pnpm run test/u)
+  assert.match(ci, /git diff --exit-code -- lib/u)
+  assert.match(publish, /--draft --prerelease/u)
+  assert.match(publish, /npm publish \.release\/dsh-native-image-viewer\.tgz --access public --tag beta/u)
+  assert.match(publish, /--draft=false --prerelease/u)
 })

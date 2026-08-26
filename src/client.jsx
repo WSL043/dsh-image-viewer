@@ -17,14 +17,14 @@ export const inject = ['locale', 'slots']
 const LOCALES = {
   en: {
     dialog: 'Image viewer', close: 'Close', fit: 'Fit', actual: '100%', download: 'Download',
-    annotate: 'Mark regions', regions: 'Region notes', regionHint: 'Click a point on the image, then add a note.',
+    annotate: 'Mark region', cancelAnnotate: 'Cancel marking', regions: 'Region notes', regionHint: 'Click a point on the image, then add a note.',
     note: 'Region {value}', notePlaceholder: 'Describe what should change here…', removeNote: 'Remove region note',
     hideNotes: 'Hide notes', copyNotes: 'Copy notes', copied: 'Copied', previous: 'Previous image', next: 'Next image',
     zoomHint: 'Wheel to zoom · drag to pan · double-click for 100%', preparing: 'Preparing…', failed: 'Could not prepare this image.',
   },
   zh: {
     dialog: '图片查看器', close: '关闭', fit: '适应窗口', actual: '原始大小', download: '下载',
-    annotate: '标记区域', regions: '区域备注', regionHint: '点击图片中的位置，然后填写备注。',
+    annotate: '标记区域', cancelAnnotate: '取消标记', regions: '区域备注', regionHint: '点击图片中的位置，然后填写备注。',
     note: '区域 {value}', notePlaceholder: '描述这里需要怎样调整…', removeNote: '删除区域备注',
     hideNotes: '收起备注', copyNotes: '复制备注', copied: '已复制', previous: '上一张图片', next: '下一张图片',
     zoomHint: '滚轮缩放 · 拖动查看 · 双击切换原始大小', preparing: '正在准备…', failed: '暂时无法准备这张图片。',
@@ -179,10 +179,16 @@ function ViewerOverlay({ service, t }) {
     setEditorError(false)
   }, [item?.id])
 
-  const onWheel = event => {
+  const onWheel = useCallback(event => {
     event.preventDefault()
-    setZoomAt(transform.zoom * Math.exp(-event.deltaY * 0.0015), event.clientX, event.clientY)
-  }
+    setZoomAt(transformRef.current.zoom * Math.exp(-event.deltaY * 0.0015), event.clientX, event.clientY)
+  }, [setZoomAt])
+  useEffect(() => {
+    const stage = stageRef.current
+    if (stage === null || request === undefined) return undefined
+    stage.addEventListener('wheel', onWheel, { passive: false })
+    return () => stage.removeEventListener('wheel', onWheel)
+  }, [onWheel, request])
   const onPointerDown = event => {
     if (event.button !== 0 || annotating) return
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -223,6 +229,7 @@ function ViewerOverlay({ service, t }) {
       note: '',
     }
     setAnnotations(current => [...current, annotation])
+    setAnnotating(false)
     setSelected(annotation.id)
     setFocusNote(annotation.id)
   }
@@ -254,7 +261,7 @@ function ViewerOverlay({ service, t }) {
     <div className="niv-title niv-sr-only"><strong>{item.name}</strong>{meta !== '' ? <small>{meta}</small> : null}</div>
     <header className="niv-topbar" role="toolbar" aria-label={t('dialog')}>
       <div className="niv-actions">
-        {request.annotations ? <button type="button" className="niv-button" data-active={annotating} aria-label={t('annotate')} aria-pressed={annotating} onClick={() => setAnnotating(value => !value)}><IconEditOutline16 /><span className="niv-label">{t('annotate')}</span></button> : null}
+        {request.annotations ? <button type="button" className="niv-button" data-active={annotating} aria-label={annotating ? t('cancelAnnotate') : t('annotate')} aria-pressed={annotating} onClick={() => setAnnotating(value => !value)}><IconEditOutline16 /><span className="niv-label">{annotating ? t('cancelAnnotate') : t('annotate')}</span></button> : null}
         {annotations.length > 0 ? <button type="button" className="niv-button" data-active={selected !== undefined} onClick={() => { const first = annotations[0]; setSelected(current => current === undefined ? first.id : undefined); if (selected === undefined) setFocusNote(first.id) }}>{annotations.length} <span className="niv-label">{t('regions')}</span></button> : null}
         <button type="button" className="niv-button" aria-label={t('fit')} onClick={fit}><IconFullscreenOutline16 /><span className="niv-label">{t('fit')}</span></button>
         <button type="button" className="niv-button" onClick={actual}>{t('actual')}</button>
@@ -264,7 +271,7 @@ function ViewerOverlay({ service, t }) {
     </header>
     <button type="button" className="niv-close-floating" aria-label={t('close')} onClick={() => service.close()}><IconCloseOutline16 /></button>
     <div className="niv-workspace" data-editor={request.editor !== undefined}>
-      <main ref={stageRef} className="niv-stage" data-dragging={dragging} data-annotating={annotating} onClick={event => { if (event.target === event.currentTarget && !annotating && transform.zoom === 1) service.close() }} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endPointer} onPointerCancel={endPointer} onDoubleClick={() => { if (transform.zoom === 1) actual(); else fit() }}>
+      <main ref={stageRef} className="niv-stage" data-dragging={dragging} data-annotating={annotating} onClick={event => { if (event.target === event.currentTarget && !annotating && transform.zoom === 1) service.close() }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endPointer} onPointerCancel={endPointer} onDoubleClick={() => { if (transform.zoom === 1) actual(); else fit() }}>
         <div ref={surfaceRef} className="niv-surface" onClick={addAnnotation} style={{ transform: `translate3d(${transform.x}px,${transform.y}px,0) scale(${transform.zoom})` }}>
           <img ref={imageRef} className="niv-image" src={item.src} alt={item.name} draggable="false" />
           {annotations.map((annotation, position) => <div className="niv-annotation" data-x={annotation.x < 0.38 ? 'right' : annotation.x > 0.62 ? 'left' : 'center'} data-y={annotation.y < 0.28 ? 'down' : 'up'} style={{ left: `${annotation.x * 100}%`, top: `${annotation.y * 100}%`, transform: `translate(-50%,-50%) scale(${1 / transform.zoom})` }} key={annotation.id}>

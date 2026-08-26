@@ -1,6 +1,6 @@
 {
   "name": "dsh-native-image-viewer",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "description": "Native zoom, pan, download, gallery, and region-note image viewer for DeepSeek Harness",
   "keywords": [
     "dsh-plugin",
