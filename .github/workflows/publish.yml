@@ -106,7 +106,17 @@ jobs:
             | jq -e '.isDraft == true and .isPrerelease == true and (.assets | any(.name == "dsh-native-image-viewer.tgz" and .size > 0))' >/dev/null
       - name: Use an OIDC-capable npm CLI
         run: npm install --global npm@12.0.2
+      - name: Check whether npm version already exists
+        id: npm-version
+        shell: bash
+        run: |
+          if npm view "dsh-native-image-viewer@${{ steps.version.outputs.version }}" version >/dev/null 2>&1; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Publish Beta to npm
+        if: steps.npm-version.outputs.needed == 'true'
         run: npm publish .release/dsh-native-image-viewer.tgz --access public --tag beta
       - name: Publish GitHub prerelease
         env:

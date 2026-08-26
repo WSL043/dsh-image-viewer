@@ -80,6 +80,8 @@ test('release is gated by checks, an immutable draft, and npm beta publishing', 
   assert.match(ci, /pnpm run test/u)
   assert.match(ci, /git diff --exit-code -- lib/u)
   assert.match(publish, /--draft --prerelease/u)
+  assert.match(publish, /npm view "dsh-native-image-viewer@\$\{\{ steps\.version\.outputs\.version \}\}" version/u)
+  assert.match(publish, /if: steps\.npm-version\.outputs\.needed == 'true'/u)
   assert.match(publish, /npm publish \.release\/dsh-native-image-viewer\.tgz --access public --tag beta/u)
   assert.match(publish, /--draft=false --prerelease/u)
   assert.match(publish, /gh release delete "\$TAG" --repo "\$GITHUB_REPOSITORY" -y \|\| true/u)
