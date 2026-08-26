@@ -4,6 +4,14 @@
 
 > Beta：当前适配最新公开版 DSH。遇到无法识别的新图片结构时会保留 DSH 原生行为，不会猜测接管。
 
+<p align="center">
+  <img src="docs/assets/image-viewer-dark.png" width="900" alt="DSH 原生图片查看器的适应窗口、原始大小、缩放和下载操作">
+</p>
+
+<p align="center">
+  <img src="docs/assets/image-viewer-note.png" width="900" alt="直接在图片编号附近编辑区域备注">
+</p>
+
 ## 功能
 
 - 以鼠标位置为中心的滚轮缩放、拖动查看、触控双指缩放和双击原始大小。
