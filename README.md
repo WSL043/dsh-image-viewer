@@ -26,12 +26,6 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 
 Install the Beta:
 
-```powershell
-irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/latest/download/install.ps1' | iex
-```
-
-Or use the official DSH command:
-
 ```sh
 dsh plugin --profile web add dsh-native-image-viewer@0.1.0-beta.1
 ```
