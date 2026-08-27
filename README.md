@@ -1,15 +1,15 @@
 <div align="center">
 
-# DSH Native Image Viewer
+# DSH Image Viewer
 
 A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades images already shown by DSH without replacing the conversation, attachment, or model workflows.
 
-[![CI](https://github.com/WSL043/dsh-native-image-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/WSL043/dsh-native-image-viewer/actions/workflows/ci.yml)
+[![CI](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-native-image-viewer?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-native-image-viewer)
 [![total npm downloads](https://img.shields.io/npm/dt/dsh-native-image-viewer?logo=npm&label=total%20downloads)](https://www.npmjs.com/package/dsh-native-image-viewer)
 [![status](https://img.shields.io/badge/status-Beta-7c3aed.svg)](#install)
 [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/WSL043/dsh-native-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-native-image-viewer/stargazers)
+[![Stars](https://img.shields.io/github/stars/WSL043/dsh-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-image-viewer/stargazers)
 
 [Install](#install) · [Privacy](#privacy) · [简体中文](README.zh-CN.md)
 
@@ -18,11 +18,11 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 > Beta: the viewer targets the latest public DSH release. Unsupported image markup is left untouched instead of being guessed.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/WSL043/dsh-native-image-viewer/main/docs/assets/image-viewer-dark.png" width="900" alt="DSH Native Image Viewer with fit, original-size, zoom, and download controls">
+  <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-dark.png" width="900" alt="DSH Native Image Viewer with fit, original-size, zoom, and download controls">
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/WSL043/dsh-native-image-viewer/main/docs/assets/image-viewer-note.png" width="900" alt="A numbered region note edited directly beside its image marker">
+  <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-note.png" width="900" alt="A numbered region note edited directly beside its image marker">
 </p>
 
 ## Features
@@ -40,7 +40,7 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 Install the Beta:
 
 ```powershell
-irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/download/v0.1.0-beta.2/install.ps1' | iex
+irm 'https://github.com/WSL043/dsh-image-viewer/releases/download/v0.1.0-beta.2/install.ps1' | iex
 ```
 
 Or use the official DSH command directly:
@@ -69,8 +69,8 @@ Image bytes stay in the current browser profile. The plugin reads only URLs alre
 
 ## Support
 
-Open the [bug report form](https://github.com/WSL043/dsh-native-image-viewer/issues/new?template=bug-report.yml) with the exact plugin version, DSH version, operating system, image location (message or composer), and the action that failed. Do not include private images, credentials, or full session logs. Report sensitive security problems privately through [GitHub Security Advisories](https://github.com/WSL043/dsh-native-image-viewer/security/advisories/new).
+Open the [bug report form](https://github.com/WSL043/dsh-image-viewer/issues/new?template=bug-report.yml) with the exact plugin version, DSH version, operating system, image location (message or composer), and the action that failed. Do not include private images, credentials, or full session logs. Report sensitive security problems privately through [GitHub Security Advisories](https://github.com/WSL043/dsh-image-viewer/security/advisories/new).
 
 ## License
 
-[简体中文](README.zh-CN.md) · [Report a bug](https://github.com/WSL043/dsh-native-image-viewer/issues/new?template=bug-report.yml) · [Request a feature](https://github.com/WSL043/dsh-native-image-viewer/issues/new?template=feature-request.yml) · [MIT](LICENSE)
+[简体中文](README.zh-CN.md) · [Report a bug](https://github.com/WSL043/dsh-image-viewer/issues/new?template=bug-report.yml) · [Request a feature](https://github.com/WSL043/dsh-image-viewer/issues/new?template=feature-request.yml) · [MIT](LICENSE)
