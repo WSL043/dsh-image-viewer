@@ -23,7 +23,7 @@ function Invoke-Dsh {
 }
 
 function Get-PluginList {
-    $output = & $runner.Source @runnerPrefix plugin --profile $Profile list dsh-native-image-viewer --depth 0 2>&1 | Out-String
+    $output = & $runner.Source @runnerPrefix plugin --profile $Profile list dsh-image-viewer --depth 0 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { throw 'Official DSH plugin list failed.' }
     return $output
 }
@@ -37,14 +37,14 @@ function Get-ComposedConfig {
 function Assert-InstalledOnce {
     $list = Get-PluginList
     $config = Get-ComposedConfig
-    if ([regex]::Matches($list, 'dsh-native-image-viewer@').Count -ne 1) { throw 'The candidate package is not installed exactly once.' }
+    if ([regex]::Matches($list, 'dsh-image-viewer@').Count -ne 1) { throw 'The candidate package is not installed exactly once.' }
     if ([regex]::Matches($config, 'id: wsl043-native-image-viewer').Count -ne 1) { throw 'The candidate bundle is not composed exactly once.' }
 }
 
 function Assert-Removed {
     $list = Get-PluginList
     $config = Get-ComposedConfig
-    if ($list -match 'dsh-native-image-viewer@' -or $config -match 'id: wsl043-native-image-viewer') { throw 'The plugin remains after removal.' }
+    if ($list -match 'dsh-image-viewer@' -or $config -match 'id: wsl043-native-image-viewer') { throw 'The plugin remains after removal.' }
 }
 
 function Start-And-ProbeWeb {
@@ -79,7 +79,7 @@ try {
     Invoke-Dsh @('plugin', '--profile', $Profile, 'add', $package, '--loglevel', 'error')
     Assert-InstalledOnce
     Start-And-ProbeWeb
-    Invoke-Dsh @('plugin', '--profile', $Profile, 'remove', 'dsh-native-image-viewer', '--loglevel', 'error')
+    Invoke-Dsh @('plugin', '--profile', $Profile, 'remove', 'dsh-image-viewer', '--loglevel', 'error')
     Assert-Removed
     Invoke-Dsh @('plugin', '--profile', $Profile, 'add', $package, '--loglevel', 'error')
     Assert-InstalledOnce

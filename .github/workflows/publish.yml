@@ -42,7 +42,7 @@ jobs:
       - run: pnpm pack --pack-destination .artifacts
       - name: Accept install, Web startup, remove, and reinstall
         shell: pwsh
-        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .artifacts/dsh-native-image-viewer-*.tgz).FullName
+        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .artifacts/dsh-image-viewer-*.tgz).FullName
   release:
     needs: official-dsh-acceptance
     runs-on: ubuntu-latest
@@ -79,11 +79,11 @@ jobs:
           rm -rf .release
           mkdir -p .release
           pnpm pack --pack-destination .release
-          mv .release/dsh-native-image-viewer-*.tgz .release/dsh-native-image-viewer.tgz
+          mv .release/dsh-image-viewer-*.tgz .release/dsh-image-viewer.tgz
           cp install.ps1 .release/install.ps1
-          tar -xOf .release/dsh-native-image-viewer.tgz package/package.json \
+          tar -xOf .release/dsh-image-viewer.tgz package/package.json \
             | jq -e --arg version "${{ steps.version.outputs.version }}" \
-              '.name == "dsh-native-image-viewer" and .version == $version' >/dev/null
+              '.name == "dsh-image-viewer" and .version == $version' >/dev/null
       - name: Write user-facing release notes
         env:
           CONTRIBUTOR_PRS: ${{ inputs.contributor_prs }}
@@ -132,13 +132,13 @@ jobs:
           ## Install or update
 
           \`\`\`powershell
-          irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/download/v$VERSION/install.ps1' | iex
+          irm 'https://github.com/WSL043/dsh-image-viewer/releases/download/v$VERSION/install.ps1' | iex
           \`\`\`
 
           Or use the official DSH command:
 
           \`\`\`sh
-          dsh plugin --profile web add dsh-native-image-viewer@$VERSION
+          dsh plugin --profile web add dsh-image-viewer@$VERSION
           \`\`\`
 
           Restart DSH manually after saving active work.
@@ -158,13 +158,13 @@ jobs:
           ## 安装或更新
 
           \`\`\`powershell
-          irm 'https://github.com/WSL043/dsh-native-image-viewer/releases/download/v$VERSION/install.ps1' | iex
+          irm 'https://github.com/WSL043/dsh-image-viewer/releases/download/v$VERSION/install.ps1' | iex
           \`\`\`
 
           也可以使用 DSH 官方命令：
 
           \`\`\`sh
-          dsh plugin --profile web add dsh-native-image-viewer@$VERSION
+          dsh plugin --profile web add dsh-image-viewer@$VERSION
           \`\`\`
 
           保存正在进行的工作后手动重启 DSH。
@@ -176,24 +176,24 @@ jobs:
         shell: bash
         run: |
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "DSH Native Image Viewer $TAG" --notes-file .release/release.md --draft --prerelease
-          gh release upload "$TAG" .release/dsh-native-image-viewer.tgz .release/install.ps1 --repo "$GITHUB_REPOSITORY"
+            --title "DSH Image Viewer $TAG" --notes-file .release/release.md --draft --prerelease
+          gh release upload "$TAG" .release/dsh-image-viewer.tgz .release/install.ps1 --repo "$GITHUB_REPOSITORY"
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets \
-            | jq -e '.isDraft == true and .isPrerelease == true and (.assets | any(.name == "dsh-native-image-viewer.tgz" and .size > 0)) and (.assets | any(.name == "install.ps1" and .size > 0))' >/dev/null
+            | jq -e '.isDraft == true and .isPrerelease == true and (.assets | any(.name == "dsh-image-viewer.tgz" and .size > 0)) and (.assets | any(.name == "install.ps1" and .size > 0))' >/dev/null
       - name: Use an OIDC-capable npm CLI
         run: npm install --global npm@12.0.2
       - name: Check whether npm version already exists
         id: npm-version
         shell: bash
         run: |
-          if npm view "dsh-native-image-viewer@${{ steps.version.outputs.version }}" version >/dev/null 2>&1; then
+          if npm view "dsh-image-viewer@${{ steps.version.outputs.version }}" version >/dev/null 2>&1; then
             echo "needed=false" >> "$GITHUB_OUTPUT"
           else
             echo "needed=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Publish Beta to npm
         if: steps.npm-version.outputs.needed == 'true'
-        run: npm publish .release/dsh-native-image-viewer.tgz --access public --tag beta
+        run: npm publish .release/dsh-image-viewer.tgz --access public --tag beta
       - name: Publish GitHub prerelease
         env:
           GH_TOKEN: ${{ github.token }}

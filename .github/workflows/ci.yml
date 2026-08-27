@@ -47,4 +47,4 @@ jobs:
       - run: pnpm pack --pack-destination .artifacts
       - name: Accept install, Web startup, remove, and reinstall
         shell: pwsh
-        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .artifacts/dsh-native-image-viewer-*.tgz).FullName
+        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .artifacts/dsh-image-viewer-*.tgz).FullName

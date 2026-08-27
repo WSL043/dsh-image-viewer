@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsdown'
 
-const id = 'dsh-native-image-viewer'
+const id = 'dsh-image-viewer'
 
 export default defineConfig([
   {

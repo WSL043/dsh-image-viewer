@@ -1,6 +1,6 @@
 # Agent installation guide
 
-Use this guide only when the user asks to install, update, verify, or remove `dsh-native-image-viewer` in a selected DeepSeek Harness Web profile.
+Use this guide only when the user asks to install, update, verify, or remove `dsh-image-viewer` in a selected DeepSeek Harness Web profile.
 
 ## Safety
 
@@ -13,7 +13,7 @@ Use this guide only when the user asks to install, update, verify, or remove `ds
 ## Install or update
 
 ```sh
-dsh plugin --profile web add dsh-native-image-viewer@0.1.0-beta.2
+dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.3
 ```
 
 DSH-Portable exposes the same standard `dsh plugin` command. Do not use a private executable path in public instructions.
@@ -21,7 +21,7 @@ DSH-Portable exposes the same standard `dsh plugin` command. Do not use a privat
 ## Verify
 
 ```sh
-dsh plugin --profile web list dsh-native-image-viewer --depth 0
+dsh plugin --profile web list dsh-image-viewer --depth 0
 dsh --profile web --dump-config
 ```
 
@@ -30,7 +30,7 @@ Confirm the package and `wsl043-native-image-viewer` bundle each appear exactly 
 ## Uninstall
 
 ```sh
-dsh plugin --profile web remove dsh-native-image-viewer
+dsh plugin --profile web remove dsh-image-viewer
 ```
 
 Verify the package and bundle row are absent. Uninstall must preserve images, sessions, credentials, settings, and unrelated plugins.

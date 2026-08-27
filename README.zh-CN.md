@@ -5,8 +5,8 @@
 面向 DeepSeek Harness 的简洁、与模型和供应商无关的图片查看器。它只增强 DSH 已经显示的图片，不替换会话、附件或模型流程。
 
 [![CI](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/dsh-native-image-viewer?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-native-image-viewer)
-[![npm 总下载量](https://img.shields.io/npm/dt/dsh-native-image-viewer?logo=npm&label=%E6%80%BB%E4%B8%8B%E8%BD%BD%E9%87%8F)](https://www.npmjs.com/package/dsh-native-image-viewer)
+[![npm](https://img.shields.io/npm/v/dsh-image-viewer?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-image-viewer)
+[![npm 总下载量](https://img.shields.io/npm/dt/dsh-image-viewer?logo=npm&label=%E6%80%BB%E4%B8%8B%E8%BD%BD%E9%87%8F)](https://www.npmjs.com/package/dsh-image-viewer)
 [![状态](https://img.shields.io/badge/%E7%8A%B6%E6%80%81-Beta-7c3aed.svg)](#安装)
 [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/WSL043/dsh-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-image-viewer/stargazers)
@@ -18,7 +18,7 @@
 > Beta：当前适配最新公开版 DSH。遇到无法识别的新图片结构时会保留 DSH 原生行为，不会猜测接管。
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-dark.png" width="900" alt="DSH 原生图片查看器的适应窗口、原始大小、缩放和下载操作">
+  <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-dark.png" width="900" alt="DSH 图片查看器的适应窗口、原始大小、缩放和下载操作">
 </p>
 
 <p align="center">
@@ -40,13 +40,13 @@
 安装 Beta：
 
 ```powershell
-irm 'https://github.com/WSL043/dsh-image-viewer/releases/download/v0.1.0-beta.2/install.ps1' | iex
+irm 'https://github.com/WSL043/dsh-image-viewer/releases/download/v0.1.0-beta.3/install.ps1' | iex
 ```
 
 也可以直接使用 DSH 官方命令：
 
 ```sh
-dsh plugin --profile web add dsh-native-image-viewer@0.1.0-beta.2
+dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.3
 ```
 
 保存正在进行的工作后手动重启 DSH。本插件不需要供应商凭据或图片生成账户权限。
@@ -58,7 +58,7 @@ dsh plugin --profile web add dsh-native-image-viewer@0.1.0-beta.2
 ## 卸载
 
 ```sh
-dsh plugin --profile web remove dsh-native-image-viewer
+dsh plugin --profile web remove dsh-image-viewer
 ```
 
 卸载后恢复 DSH 内置图片灯箱，不会删除会话、附件、生成图片、供应商插件或凭据。

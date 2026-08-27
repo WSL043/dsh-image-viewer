@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url)
 
 test('declares one optional web client plugin', async () => {
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
-  assert.equal(pkg.name, 'dsh-native-image-viewer')
+  assert.equal(pkg.name, 'dsh-image-viewer')
   assert.match(pkg.version, /^\d+\.\d+\.\d+-beta\.\d+$/u)
   assert.equal(pkg.dsh.client.platform, 'web')
   assert.ok(pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-layout'))
@@ -92,9 +92,9 @@ test('release is gated by checks, an immutable draft, and npm beta publishing', 
   assert.match(ci, /accept-official-release\.ps1/u)
   assert.match(publish, /needs: official-dsh-acceptance/u)
   assert.match(publish, /--draft --prerelease/u)
-  assert.match(publish, /npm view "dsh-native-image-viewer@\$\{\{ steps\.version\.outputs\.version \}\}" version/u)
+  assert.match(publish, /npm view "dsh-image-viewer@\$\{\{ steps\.version\.outputs\.version \}\}" version/u)
   assert.match(publish, /if: steps\.npm-version\.outputs\.needed == 'true'/u)
-  assert.match(publish, /npm publish \.release\/dsh-native-image-viewer\.tgz --access public --tag beta/u)
+  assert.match(publish, /npm publish \.release\/dsh-image-viewer\.tgz --access public --tag beta/u)
   assert.match(publish, /--draft=false --prerelease/u)
   assert.match(publish, /\.release\/install\.ps1/u)
   assert.match(publish, /releases\/download\/v\$VERSION\/install\.ps1/u)
@@ -114,7 +114,7 @@ test('the Windows helper is version-pinned and delegates to the official DSH plu
     readFile(new URL('package.json', root), 'utf8').then(JSON.parse),
     readFile(new URL('compatibility.json', root), 'utf8').then(JSON.parse),
   ])
-  assert.match(installer, new RegExp(`dsh-native-image-viewer@${pkg.version.replaceAll('.', '\\.')}`, 'u'))
+  assert.match(installer, new RegExp(`dsh-image-viewer@${pkg.version.replaceAll('.', '\\.')}`, 'u'))
   assert.match(installer, new RegExp(`\\$dshRelease = '${compatibility.latestTested.replaceAll('.', '\\.')}'`, 'u'))
   assert.match(installer, /plugin', '--profile', 'web', 'add'/u)
   assert.doesNotMatch(installer, /\bnpx\b|DSH_PORTABLE_ROOT|\.\\dsh\.exe/u)
