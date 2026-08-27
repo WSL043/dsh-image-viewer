@@ -48,6 +48,8 @@
   },
   "scripts": {
     "build": "tsdown --config tsdown.config.mjs",
+    "test:behavior": "node --test tests/viewer.test.mjs",
+    "test:delivery": "node --test tests/package-contract.test.mjs",
     "test": "node --test tests/*.test.mjs",
     "check": "pnpm run test && pnpm run build && pnpm pack --pack-destination .artifacts"
   },

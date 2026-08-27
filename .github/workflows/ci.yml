@@ -1,50 +1,98 @@
-name: CI
+name: Risk-based CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      behavior: ${{ steps.plan.outputs.behavior }}
+      delivery: ${{ steps.plan.outputs.delivery }}
+      installer: ${{ steps.plan.outputs.installer }}
+      official: ${{ steps.plan.outputs.official }}
+    steps:
+      - uses: actions/checkout@v6
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v6
+        with: { node-version: 24, package-manager-cache: false }
+      - id: plan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
+        run: |
+          published="$(npm view dsh-image-viewer dist-tags.latest)"
+          node scripts/ci-change-plan.mjs --base "$BASE_SHA" --published "$published"
+
+  behavior:
+    needs: plan
+    if: needs.plan.outputs.behavior == 'true'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v5
-        with:
-          version: 11.19.0
-          run_install: false
+        with: { version: 11.19.0, run_install: false }
       - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
+        with: { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm run test
+      - name: Run zoom, pan, gallery, download, and annotation behavior
+        run: pnpm run test:behavior
       - run: pnpm run build
       - run: git diff --exit-code -- lib
       - run: pnpm pack --pack-destination .artifacts
-  official-dsh-acceptance:
+      - uses: actions/upload-artifact@v7
+        with:
+          name: image-viewer-${{ github.sha }}
+          path: .artifacts/*.tgz
+          if-no-files-found: error
+
+  delivery:
+    needs: plan
+    if: needs.plan.outputs.delivery == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+        with: { version: 11.19.0, run_install: false }
+      - uses: actions/setup-node@v6
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run test:delivery
+
+  windows-installer:
+    needs: plan
+    if: needs.plan.outputs.installer == 'true'
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 24, package-manager-cache: false }
+      - run: node --test tests/windows-installer.test.mjs
+
+  official-dsh:
     name: Official DSH end-to-end acceptance
+    needs: [plan, behavior]
+    if: needs.plan.outputs.official == 'true' && needs.behavior.result == 'success'
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v5
-        with:
-          version: 11.19.0
-          run_install: false
+        with: { version: 11.19.0, run_install: false }
       - uses: actions/setup-node@v6
+        with: { node-version: 24, package-manager-cache: false }
+      - uses: actions/download-artifact@v8
         with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm run build
-      - run: pnpm pack --pack-destination .artifacts
-      - name: Accept install, Web startup, remove, and reinstall
+          name: image-viewer-${{ github.sha }}
+          path: .candidate
+      - name: Install, compose, start Web, remove, and reinstall
         shell: pwsh
-        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .artifacts/dsh-image-viewer-*.tgz).FullName
+        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .candidate/dsh-image-viewer-*.tgz).FullName
