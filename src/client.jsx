@@ -11,7 +11,7 @@ import {
 } from './viewer.js'
 import { CSS as VIEWER_CSS } from './styles.js'
 
-export const name = 'dsh-native-image-viewer'
+export const name = 'dsh-image-viewer'
 export const inject = ['locale', 'slots']
 
 const LOCALES = {

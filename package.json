@@ -1,7 +1,7 @@
 {
-  "name": "dsh-native-image-viewer",
-  "version": "0.1.0-beta.2",
-  "description": "Native zoom, pan, download, gallery, and region-note image viewer for DeepSeek Harness",
+  "name": "dsh-image-viewer",
+  "version": "0.1.0-beta.3",
+  "description": "Zoom, pan, download, gallery, and region-note image viewer for DeepSeek Harness",
   "keywords": [
     "dsh-plugin",
     "deepseek-harness",
@@ -53,12 +53,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/WSL043/dsh-native-image-viewer.git"
+    "url": "git+https://github.com/WSL043/dsh-image-viewer.git"
   },
   "bugs": {
-    "url": "https://github.com/WSL043/dsh-native-image-viewer/issues"
+    "url": "https://github.com/WSL043/dsh-image-viewer/issues"
   },
-  "homepage": "https://github.com/WSL043/dsh-native-image-viewer#readme",
+  "homepage": "https://github.com/WSL043/dsh-image-viewer#readme",
   "publishConfig": {
     "access": "public"
   },
