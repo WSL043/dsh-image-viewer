@@ -169,6 +169,25 @@ jobs:
 
           保存正在进行的工作后手动重启 DSH。
           NOTES
+      - name: Use an OIDC-capable npm CLI
+        run: npm install --global npm@12.0.2
+      - name: Publish or reconcile with npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          if tarball="$(npm view "dsh-image-viewer@$version" dist.tarball 2>/dev/null)"; then
+            curl --fail --location --silent --show-error "$tarball" --output "$RUNNER_TEMP/npm.tgz"
+            if ! cmp -s .release/dsh-image-viewer.tgz "$RUNNER_TEMP/npm.tgz"; then
+              mkdir -p "$RUNNER_TEMP/local" "$RUNNER_TEMP/remote"
+              tar -xzf .release/dsh-image-viewer.tgz -C "$RUNNER_TEMP/local"
+              tar -xzf "$RUNNER_TEMP/npm.tgz" -C "$RUNNER_TEMP/remote"
+              diff -qr --strip-trailing-cr --exclude='*.map' "$RUNNER_TEMP/local/package" "$RUNNER_TEMP/remote/package"
+              cp "$RUNNER_TEMP/npm.tgz" .release/dsh-image-viewer.tgz
+            fi
+          else
+            npm publish .release/dsh-image-viewer.tgz --access public --tag beta
+          fi
       - name: Create verified draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -180,20 +199,6 @@ jobs:
           gh release upload "$TAG" .release/dsh-image-viewer.tgz .release/install.ps1 --repo "$GITHUB_REPOSITORY"
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets \
             | jq -e '.isDraft == true and .isPrerelease == true and (.assets | any(.name == "dsh-image-viewer.tgz" and .size > 0)) and (.assets | any(.name == "install.ps1" and .size > 0))' >/dev/null
-      - name: Use an OIDC-capable npm CLI
-        run: npm install --global npm@12.0.2
-      - name: Check whether npm version already exists
-        id: npm-version
-        shell: bash
-        run: |
-          if npm view "dsh-image-viewer@${{ steps.version.outputs.version }}" version >/dev/null 2>&1; then
-            echo "needed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "needed=true" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Publish Beta to npm
-        if: steps.npm-version.outputs.needed == 'true'
-        run: npm publish .release/dsh-image-viewer.tgz --access public --tag beta
       - name: Publish GitHub prerelease
         env:
           GH_TOKEN: ${{ github.token }}
