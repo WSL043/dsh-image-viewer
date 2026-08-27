@@ -54,6 +54,7 @@ jobs:
           name: image-viewer-${{ github.sha }}
           path: .artifacts/*.tgz
           if-no-files-found: error
+          include-hidden-files: true
 
   delivery:
     needs: plan
