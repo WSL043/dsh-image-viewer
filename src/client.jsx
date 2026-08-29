@@ -2,9 +2,8 @@ import {
   useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore,
 } from 'react'
 import {
-  Button, IconChevronLeftOutline14, IconChevronRightOutline14, IconCloseOutline16,
+  IconChevronLeftOutline14, IconChevronRightOutline14, IconCloseOutline16,
   IconCopyOutline16, IconDownloadOutline16, IconEditOutline16, IconFullscreenOutline16,
-  Input,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import {
   imageItemsForButton, NativeImageViewerService, nativeImageButton,
@@ -48,18 +47,42 @@ const noteText = (annotations, t) => annotations.map((annotation, index) => {
   return `${label} (${Math.round(annotation.x * 100)}%, ${Math.round(annotation.y * 100)}%): ${annotation.note.trim()}`
 }).filter(line => !line.endsWith(': ')).join('\n')
 
+function ViewerAction({ action, annotations, item, service }) {
+  const [state, setState] = useState('idle')
+  const invoke = async () => {
+    if (state === 'pending') return
+    setState('pending')
+    try {
+      await action.onInvoke({ annotations, item, src: item.src })
+      setState('idle')
+      if (action.closeOnSuccess) service.close()
+    } catch { setState('failed') }
+  }
+  const label = state === 'pending' ? action.pendingLabel : state === 'failed' ? action.errorLabel : action.label
+  return <button type="button" className="niv-button" disabled={state === 'pending'} onClick={() => { void invoke() }}><span className="niv-label">{label}</span></button>
+}
+
+function ViewerDownload({ download, item, t }) {
+  const [state, setState] = useState('idle')
+  const invoke = async () => {
+    if (state === 'pending') return
+    setState('pending')
+    try { await download.onInvoke({ item, src: item.src }); setState('idle') } catch { setState('failed') }
+  }
+  const label = state === 'pending' ? download.pendingLabel ?? t('preparing') : state === 'failed' ? download.errorLabel ?? t('failed') : t('download')
+  return <button type="button" className="niv-download" disabled={state === 'pending'} onClick={() => { void invoke() }}><IconDownloadOutline16 /><span className="niv-label">{label}</span></button>
+}
+
 function ViewerOverlay({ service, t }) {
   const request = useSyncExternalStore(service.subscribe, service.getSnapshot)
   const [index, setIndex] = useState(0)
   const [transform, setTransform] = useState({ zoom: 1, x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
   const [annotating, setAnnotating] = useState(false)
-  const [annotationsByImage, setAnnotationsByImage] = useState({})
+  const [annotationsByImage, setAnnotationsByImage] = useState(service.getAnnotationsSnapshot)
+  const annotationsByImageRef = useRef(annotationsByImage)
   const [selected, setSelected] = useState()
   const [focusNote, setFocusNote] = useState()
-  const [prompt, setPrompt] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [editorError, setEditorError] = useState(false)
   const [copied, setCopied] = useState(false)
   const rootRef = useRef(null)
   const stageRef = useRef(null)
@@ -69,6 +92,7 @@ function ViewerOverlay({ service, t }) {
   const gestureRef = useRef()
   const transformRef = useRef(transform)
   transformRef.current = transform
+  annotationsByImageRef.current = annotationsByImage
 
   useEffect(() => {
     if (request === undefined) return
@@ -76,11 +100,7 @@ function ViewerOverlay({ service, t }) {
     setTransform({ zoom: 1, x: 0, y: 0 })
     setDragging(false)
     setAnnotating(false)
-    setAnnotationsByImage({})
     setSelected(undefined)
-    setPrompt('')
-    setBusy(false)
-    setEditorError(false)
     setCopied(false)
   }, [request?.revision])
 
@@ -88,12 +108,13 @@ function ViewerOverlay({ service, t }) {
   const annotations = item === undefined ? [] : annotationsByImage[item.id] ?? []
   const setAnnotations = useCallback((update) => {
     if (item === undefined) return
-    setAnnotationsByImage(current => {
-      const previous = current[item.id] ?? []
-      const next = typeof update === 'function' ? update(previous) : update
-      return { ...current, [item.id]: next }
-    })
-  }, [item?.id])
+    const previous = annotationsByImageRef.current[item.id] ?? []
+    const next = typeof update === 'function' ? update(previous) : update
+    const snapshot = { ...annotationsByImageRef.current, [item.id]: next }
+    annotationsByImageRef.current = snapshot
+    service.setAnnotations(item.id, next)
+    setAnnotationsByImage(snapshot)
+  }, [item?.id, service])
 
   const boundedPan = useCallback((zoom, x, y) => {
     const stage = stageRef.current
@@ -135,6 +156,10 @@ function ViewerOverlay({ service, t }) {
     const onKeyDown = event => {
       if (event.key === 'Escape') {
         event.preventDefault()
+        if (event.target instanceof Element && event.target.closest('.niv-inline-note') !== null) {
+          setSelected(undefined)
+          return
+        }
         service.close()
         return
       }
@@ -176,7 +201,6 @@ function ViewerOverlay({ service, t }) {
     setDragging(false)
     setAnnotating(false)
     setSelected(undefined)
-    setEditorError(false)
   }, [item?.id])
 
   const onWheel = useCallback(event => {
@@ -233,19 +257,6 @@ function ViewerOverlay({ service, t }) {
     setSelected(annotation.id)
     setFocusNote(annotation.id)
   }
-  const submit = async () => {
-    if (busy || request?.editor?.onSubmit === undefined || item === undefined) return
-    setBusy(true)
-    setEditorError(false)
-    try {
-      await request.editor.onSubmit({ prompt, annotations, item, src: item.src })
-      service.close()
-    } catch {
-      setEditorError(true)
-    } finally {
-      setBusy(false)
-    }
-  }
   const copyNotes = async () => {
     const text = noteText(annotations, t)
     if (text === '') return
@@ -266,11 +277,14 @@ function ViewerOverlay({ service, t }) {
         <button type="button" className="niv-button" aria-label={t('fit')} onClick={fit}><IconFullscreenOutline16 /><span className="niv-label">{t('fit')}</span></button>
         <button type="button" className="niv-button" onClick={actual}>{t('actual')}</button>
         <span className="niv-zoom">{Math.round(transform.zoom * 100)}%</span>
-        <a className="niv-download" href={item.src} download={downloadName(item.name)}><IconDownloadOutline16 /><span className="niv-label">{t('download')}</span></a>
+        {item.download === undefined
+          ? <a className="niv-download" href={item.src} download={downloadName(item.name)}><IconDownloadOutline16 /><span className="niv-label">{t('download')}</span></a>
+          : <ViewerDownload download={item.download} item={item} t={t} />}
+        {item.actions.map(action => <ViewerAction action={action} annotations={annotations} item={item} service={service} key={action.id} />)}
       </div>
     </header>
     <button type="button" className="niv-close-floating" aria-label={t('close')} onClick={() => service.close()}><IconCloseOutline16 /></button>
-    <div className="niv-workspace" data-editor={request.editor !== undefined}>
+    <div className="niv-workspace">
       <main ref={stageRef} className="niv-stage" data-dragging={dragging} data-annotating={annotating} onClick={event => { if (event.target === event.currentTarget && !annotating && transform.zoom === 1) service.close() }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endPointer} onPointerCancel={endPointer} onDoubleClick={() => { if (transform.zoom === 1) actual(); else fit() }}>
         <div ref={surfaceRef} className="niv-surface" onClick={addAnnotation} style={{ transform: `translate3d(${transform.x}px,${transform.y}px,0) scale(${transform.zoom})` }}>
           <img ref={imageRef} className="niv-image" src={item.src} alt={item.name} draggable="false" />
@@ -278,7 +292,14 @@ function ViewerOverlay({ service, t }) {
             <button type="button" className="niv-pin" data-active={selected === annotation.id} aria-label={fill(t('note'), { value: position + 1 })} onClick={event => { event.stopPropagation(); const opening = selected !== annotation.id; setSelected(opening ? annotation.id : undefined); if (opening) setFocusNote(annotation.id) }}>{position + 1}</button>
             {selected === annotation.id ? <div className="niv-inline-note" data-note-id={annotation.id} onClick={event => event.stopPropagation()}>
               <span className="niv-inline-index">{position + 1}</span>
-              <textarea value={annotation.note} rows={1} aria-label={fill(t('note'), { value: position + 1 })} placeholder={t('notePlaceholder')} onChange={event => { const note = event.target.value; setAnnotations(current => current.map(entry => entry.id === annotation.id ? { ...entry, note } : entry)) }} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setSelected(undefined) } }} />
+              <textarea value={annotation.note} rows={1} aria-label={fill(t('note'), { value: position + 1 })} placeholder={t('notePlaceholder')} onChange={event => { const note = event.target.value; setAnnotations(current => current.map(entry => entry.id === annotation.id ? { ...entry, note } : entry)) }} onKeyDown={event => {
+                if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'Escape') {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  event.nativeEvent?.stopImmediatePropagation?.()
+                  setSelected(undefined)
+                }
+              }} />
               <button type="button" className="niv-note-remove" aria-label={t('removeNote')} onClick={event => { event.stopPropagation(); setAnnotations(current => current.filter(entry => entry.id !== annotation.id)); setSelected(undefined) }}><IconCloseOutline16 /></button>
             </div> : null}
           </div>)}
@@ -290,11 +311,6 @@ function ViewerOverlay({ service, t }) {
         </> : annotating ? <span className="niv-hint">{t('regionHint')}</span> : transform.zoom === 1 ? <span className="niv-hint">{t('zoomHint')}</span> : null}
       </main>
       {annotations.some(annotation => annotation.note.trim() !== '') ? <button type="button" className="niv-copy-notes" onClick={() => { void copyNotes() }}><IconCopyOutline16 />{copied ? t('copied') : t('copyNotes')}</button> : null}
-      {request.editor !== undefined ? <footer className="niv-editor">
-        <Input value={prompt} placeholder={request.editor.placeholder} onChange={event => setPrompt(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void submit() } }} />
-        {editorError ? <span className="niv-editor-error" role="alert">{request.editor.errorLabel ?? t('failed')}</span> : null}
-        <Button type="button" disabled={busy} onClick={() => { void submit() }}>{busy ? request.editor.busyLabel ?? t('preparing') : request.editor.label}</Button>
-      </footer> : null}
     </div>
   </div>
 }

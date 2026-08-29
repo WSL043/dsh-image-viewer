@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
-
 const root = new URL('../', import.meta.url)
 
 test('declares one optional web client plugin', async () => {
@@ -13,7 +12,6 @@ test('declares one optional web client plugin', async () => {
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
   assert.ok(pkg.files.includes('compatibility.json'))
 })
-
 test('uses the additive shell overlay and an optional service', async () => {
   const source = await readFile(new URL('src/client.jsx', root), 'utf8')
   assert.match(source, /reflect\.provide\('nativeImageViewer'/u)
@@ -21,7 +19,6 @@ test('uses the additive shell overlay and an optional service', async () => {
   assert.match(source, /document\.addEventListener\('click', onClick, true\)/u)
   assert.doesNotMatch(source, /MutationObserver/u)
 })
-
 test('ships zoom, pan, keyboard, gallery, download, and notes', async () => {
   const source = await readFile(new URL('src/client.jsx', root), 'utf8')
   for (const marker of ['onPointerMove', 'setZoomAt', "event.key === 'ArrowLeft'", 'download=', 'copyNotes', 'focusNote']) {
@@ -35,8 +32,14 @@ test('ships zoom, pan, keyboard, gallery, download, and notes', async () => {
   assert.match(source, /addEventListener\('wheel', onWheel, \{ passive: false \}\)/u)
   assert.doesNotMatch(source, /onWheel=\{onWheel\}/u)
   assert.doesNotMatch(source, /\[request, service, fit, setZoomAt, transform\.zoom\]/u)
+  assert.match(source, /item\.actions\.map/u)
+  assert.match(source, /action\.onInvoke\(\{ annotations, item, src: item\.src \}\)/u)
+  assert.match(source, /action\.closeOnSuccess/u)
+  assert.match(source, /item\.download === undefined/u)
+  assert.match(source, /<ViewerDownload download=\{item\.download\}/u)
+  assert.doesNotMatch(source, /request\.editor|className="niv-editor"/u)
+  assert.doesNotMatch(source, /setEditorError|setPrompt|setBusy/u)
 })
-
 test('keeps the official lightbox hierarchy instead of replacing the whole page', async () => {
   const [source, styles] = await Promise.all([
     readFile(new URL('src/client.jsx', root), 'utf8'),
@@ -47,6 +50,7 @@ test('keeps the official lightbox hierarchy instead of replacing the whole page'
   assert.match(styles, /backdrop-filter:blur\(13px\)/u)
   assert.match(styles, /\.niv-close-floating\{position:absolute;top:20px;right:20px/u)
   assert.match(styles, /\.niv-topbar\{position:absolute;right:50%;bottom:22px/u)
+  assert.doesNotMatch(styles, /\.niv-editor/u)
   assert.doesNotMatch(styles, /grid-template-rows:58px/u)
 })
 
@@ -61,6 +65,12 @@ test('edits each region note beside its numbered image marker', async () => {
   assert.match(source, /if \(event\.button !== 0 \|\| annotating\) return\s+event\.currentTarget\.setPointerCapture/u)
   assert.match(source, /data-y=\{annotation\.y < 0\.28/u)
   assert.match(source, /setAnnotations\(current => \[\.\.\.current, annotation\]\)\s+setAnnotating\(false\)/u)
+  assert.match(source, /event\.key === 'Enter' && !event\.shiftKey/u)
+  assert.match(source, /stopImmediatePropagation/u)
+  assert.match(source, /closest\('\.niv-inline-note'\)/u)
+  assert.match(source, /service\.setAnnotations\(item\.id, next\)/u)
+  assert.match(source, /annotationsByImageRef\.current = snapshot\s+service\.setAnnotations\(item\.id, next\)\s+setAnnotationsByImage\(snapshot\)/u)
+  assert.doesNotMatch(source, /setAnnotationsByImage\(\{\}\)/u)
   assert.match(source, /cancelAnnotate/u)
   assert.doesNotMatch(source, /className="niv-sidebar"/u)
   assert.match(styles, /\.niv-inline-note\{position:absolute;bottom:34px/u)
