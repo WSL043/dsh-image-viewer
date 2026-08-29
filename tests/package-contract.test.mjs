@@ -102,6 +102,7 @@ test('release is gated by checks, an immutable draft, and npm beta publishing', 
   assert.match(ci, /accept-official-release\.ps1/u)
   assert.match(publish, /needs: official-dsh-acceptance/u)
   assert.match(publish, /--draft --prerelease/u)
+  assert.match(publish, /--title "\$TAG"/u)
   assert.match(publish, /npm view "dsh-image-viewer@\$version" dist\.tarball/u)
   assert.match(publish, /diff -qr --strip-trailing-cr --exclude='\*\.map'/u)
   assert.match(publish, /cp "\$RUNNER_TEMP\/npm\.tgz" \.release\/dsh-image-viewer\.tgz/u)

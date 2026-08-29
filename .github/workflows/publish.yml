@@ -182,7 +182,7 @@ jobs:
         shell: bash
         run: |
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "DSH Image Viewer $TAG" --notes-file .release/release.md --draft --prerelease
+            --title "$TAG" --notes-file .release/release.md --draft --prerelease
           gh release upload "$TAG" .release/dsh-image-viewer.tgz --repo "$GITHUB_REPOSITORY"
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets \
             | jq -e '.isDraft == true and .isPrerelease == true and (.assets | any(.name == "dsh-image-viewer.tgz" and .size > 0))' >/dev/null
