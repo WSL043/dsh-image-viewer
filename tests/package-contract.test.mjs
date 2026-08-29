@@ -98,9 +98,8 @@ test('release is gated by checks, an immutable draft, and npm beta publishing', 
   assert.match(publish, /npm publish \.release\/dsh-image-viewer\.tgz --access public --tag beta/u)
   assert.ok(publish.indexOf('Publish or reconcile with npm') < publish.indexOf('Create verified draft release'))
   assert.match(publish, /--draft=false --prerelease/u)
-  assert.match(publish, /\.release\/install\.ps1/u)
-  assert.match(publish, /releases\/download\/v\$VERSION\/install\.ps1/u)
-  assert.doesNotMatch(publish, /releases\/latest\/download\/install\.ps1/u)
+  assert.match(publish, /dsh plugin --profile web add dsh-image-viewer/u)
+  assert.doesNotMatch(publish, /\birm\b|install\.ps1/iu)
   assert.match(publish, /contributor_prs:[\s\S]*merged contributor PR numbers/u)
   assert.match(publish, /gh pr view "\$pr_number"[\s\S]*author,mergedAt,number,url/u)
   assert.doesNotMatch(publish, /reported_issues|REPORTED_ISSUES|Issue reporters/u)
@@ -108,16 +107,4 @@ test('release is gated by checks, an immutable draft, and npm beta publishing', 
   assert.match(publish, /## What's new[\s\S]*## Install or update[\s\S]*## 中文[\s\S]*## 更新内容[\s\S]*## 安装或更新/u)
   assert.match(publish, /gh release delete "\$TAG" --repo "\$GITHUB_REPOSITORY" -y \|\| true/u)
   assert.doesNotMatch(publish, /--cleanup-tag/u)
-})
-
-test('the Windows helper is version-pinned and delegates to the official DSH plugin command', async () => {
-  const [installer, pkg, compatibility] = await Promise.all([
-    readFile(new URL('install.ps1', root), 'utf8'),
-    readFile(new URL('package.json', root), 'utf8').then(JSON.parse),
-    readFile(new URL('compatibility.json', root), 'utf8').then(JSON.parse),
-  ])
-  assert.match(installer, new RegExp(`dsh-image-viewer@${pkg.version.replaceAll('.', '\\.')}`, 'u'))
-  assert.match(installer, new RegExp(`\\$dshRelease = '${compatibility.latestTested.replaceAll('.', '\\.')}'`, 'u'))
-  assert.match(installer, /plugin', '--profile', 'web', 'add'/u)
-  assert.doesNotMatch(installer, /\bnpx\b|DSH_PORTABLE_ROOT|\.\\dsh\.exe/u)
 })
