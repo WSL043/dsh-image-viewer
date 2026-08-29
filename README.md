@@ -1,67 +1,66 @@
 <div align="center">
 
-# DSH Image Viewer
+# DSH 图片查看器
 
-A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades images already shown by DSH without replacing the conversation, attachment, or model workflows.
+面向 DeepSeek Harness 的简洁、与模型和供应商无关的图片查看器。它只增强 DSH 已经显示的图片，不替换会话、附件或模型流程。
 
 [![CI](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-image-viewer?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-image-viewer)
-[![total npm downloads](https://img.shields.io/npm/dt/dsh-image-viewer?logo=npm&label=total%20downloads)](https://www.npmjs.com/package/dsh-image-viewer)
-[![status](https://img.shields.io/badge/status-Beta-7c3aed.svg)](#install)
+[![npm 总下载量](https://img.shields.io/npm/dt/dsh-image-viewer?logo=npm&label=%E6%80%BB%E4%B8%8B%E8%BD%BD%E9%87%8F)](https://www.npmjs.com/package/dsh-image-viewer)
+[![状态](https://img.shields.io/badge/%E7%8A%B6%E6%80%81-Beta-7c3aed.svg)](#安装)
 [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/WSL043/dsh-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-image-viewer/stargazers)
 
-[Install](#install) · [Privacy](#privacy) · [简体中文](README.zh-CN.md)
+[安装](#安装) · [隐私](#隐私) · [English](README.en.md)
 
 </div>
 
-> Beta: the viewer targets the latest public DSH release. Unsupported image markup is left untouched instead of being guessed.
+> Beta：当前适配最新公开版 DSH。遇到无法识别的新图片结构时会保留 DSH 原生行为，不会猜测接管。
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-en.png" width="900" alt="DSH Image Viewer displaying an illustration with fit, original-size, download, and an inline numbered region note">
+  <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-zh.png" width="900" alt="DSH 图片查看器展示插画、适应窗口、原始大小、下载和图片编号附近的区域备注">
 </p>
 
-## Features
+## 功能
 
-- Wheel zoom centered on the pointer, drag-to-pan, touch pinch, and double-click 100% view.
-- Fit and original-size controls, original-file download, keyboard navigation, and multi-image galleries.
-- One-shot region marking with each note edited beside its numbered image marker. Enter saves and collapses the note;
-  Shift+Enter adds a new line.
-- Light and dark themes through DSH design tokens, responsive layout, focus containment, and reduced-motion support.
-- Optional `nativeImageViewer` client service so image-producing plugins can add their own continuation action.
+- 以鼠标位置为中心的滚轮缩放、拖动查看、触控双指缩放和双击原始大小。
+- 适应窗口、原始大小、原图下载、键盘切换和多图浏览。
+- 一次点击标记一个区域，备注直接显示在图片编号附近并自动获得输入焦点；Enter 保存并收起，Shift+Enter 换行。
+- 使用 DSH 设计令牌适配亮色、暗色、响应式布局、焦点约束和减少动态效果设置。
+- 提供可选的 `nativeImageViewer` 客户端服务，图片生成插件可以按需增加自己的后续操作。
 
-DSH keeps working when the plugin is absent or cannot recognize a newer image surface. Other plugins may use the service when present, but must retain their own basic fallback.
+未安装本插件或插件无法识别更新后的图片界面时，DSH 仍保持原有查看能力。其他插件可以在检测到服务时使用高级查看，但仍应保留自己的基础回退。
 
-## Install
+## 安装
 
-Install the Beta:
+安装 Beta：
 
 ```sh
 dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.4
 ```
 
-Restart DSH manually after saving active work. The plugin never needs access to provider credentials or image-generation accounts.
+保存正在进行的工作后手动重启 DSH。本插件不需要供应商凭据或图片生成账户权限。
 
-## Update
+## 更新
 
-Run the same version-pinned `dsh plugin ... add` command for the version you want to install.
+使用目标版本对应的固定 `dsh plugin ... add` 命令更新。
 
-## Uninstall
+## 卸载
 
 ```sh
 dsh plugin --profile web remove dsh-image-viewer
 ```
 
-Uninstalling restores DSH's built-in image lightbox. It does not remove conversations, attachments, generated images, provider plugins, or credentials.
+卸载后恢复 DSH 内置图片灯箱，不会删除会话、附件、生成图片、供应商插件或凭据。
 
-## Privacy
+## 隐私
 
-Image bytes stay in the current browser profile. The plugin reads only URLs already rendered by DSH, does not upload images, does not call a model, and does not read provider credentials. Region notes remain available when the same image is reopened during the current DSH page session, but are not written to conversation storage unless another plugin explicitly uses them for a user-requested action.
+图片数据保留在当前浏览器配置中。插件只读取 DSH 已经渲染的图片 URL，不上传图片、不调用模型，也不读取供应商凭据。当前 DSH 页面会话内重新打开同一张图片时，区域备注仍会保留；除非其他插件响应用户的明确操作，否则不会写入会话存储。
 
-## Support
+## 反馈
 
-Open the [bug report form](https://github.com/WSL043/dsh-image-viewer/issues/new?template=bug-report.yml) with the exact plugin version, DSH version, operating system, image location (message or composer), and the action that failed. Do not include private images, credentials, or full session logs. Report sensitive security problems privately through [GitHub Security Advisories](https://github.com/WSL043/dsh-image-viewer/security/advisories/new).
+请通过[问题反馈表单](https://github.com/WSL043/dsh-image-viewer/issues/new?template=bug-report.yml)提供准确的插件版本、DSH 版本、操作系统、图片所在位置（消息或输入框）以及失败的操作。不要提交私人图片、凭据或完整会话日志。敏感安全问题请通过 [GitHub Security Advisories](https://github.com/WSL043/dsh-image-viewer/security/advisories/new) 私下报告。
 
-## License
+## 许可证
 
-[简体中文](README.zh-CN.md) · [Report a bug](https://github.com/WSL043/dsh-image-viewer/issues/new?template=bug-report.yml) · [Request a feature](https://github.com/WSL043/dsh-image-viewer/issues/new?template=feature-request.yml) · [MIT](LICENSE)
+[English](README.en.md) · [反馈问题](https://github.com/WSL043/dsh-image-viewer/issues/new?template=bug-report.yml) · [功能建议](https://github.com/WSL043/dsh-image-viewer/issues/new?template=feature-request.yml) · [MIT](LICENSE)
