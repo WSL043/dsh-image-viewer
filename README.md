@@ -29,7 +29,8 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 
 - Wheel zoom centered on the pointer, drag-to-pan, touch pinch, and double-click 100% view.
 - Fit and original-size controls, original-file download, keyboard navigation, and multi-image galleries.
-- One-shot region marking with each note edited beside its numbered image marker.
+- One-shot region marking with each note edited beside its numbered image marker. Enter saves and collapses the note;
+  Shift+Enter adds a new line.
 - Light and dark themes through DSH design tokens, responsive layout, focus containment, and reduced-motion support.
 - Optional `nativeImageViewer` client service so image-producing plugins can add their own continuation action.
 
@@ -40,7 +41,7 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 Install the Beta:
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.3
+dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.4
 ```
 
 Restart DSH manually after saving active work. The plugin never needs access to provider credentials or image-generation accounts.
@@ -59,7 +60,7 @@ Uninstalling restores DSH's built-in image lightbox. It does not remove conversa
 
 ## Privacy
 
-Image bytes stay in the current browser profile. The plugin reads only URLs already rendered by DSH, does not upload images, does not call a model, and does not read provider credentials. Region notes remain transient unless another plugin explicitly uses them for a user-requested action.
+Image bytes stay in the current browser profile. The plugin reads only URLs already rendered by DSH, does not upload images, does not call a model, and does not read provider credentials. Region notes remain available when the same image is reopened during the current DSH page session, but are not written to conversation storage unless another plugin explicitly uses them for a user-requested action.
 
 ## Support
 

@@ -1,4 +1,20 @@
 const boundedNumber = (value, fallback) => Number.isFinite(value) && value > 0 ? value : fallback
+const downloadOf = value => typeof value?.onInvoke === 'function' ? {
+  pendingLabel: typeof value.pendingLabel === 'string' && value.pendingLabel !== '' ? value.pendingLabel : undefined,
+  errorLabel: typeof value.errorLabel === 'string' && value.errorLabel !== '' ? value.errorLabel : undefined,
+  onInvoke: value.onInvoke,
+} : undefined
+const actionsOf = value => Array.isArray(value) ? value.flatMap((action, position) => {
+  if (typeof action?.onInvoke !== 'function' || typeof action?.label !== 'string' || action.label.trim() === '') return []
+  return [{
+    id: typeof action.id === 'string' && action.id !== '' ? action.id : `action-${position + 1}`,
+    label: action.label,
+    pendingLabel: typeof action.pendingLabel === 'string' && action.pendingLabel !== '' ? action.pendingLabel : action.label,
+    errorLabel: typeof action.errorLabel === 'string' && action.errorLabel !== '' ? action.errorLabel : action.label,
+    closeOnSuccess: action.closeOnSuccess === true,
+    onInvoke: action.onInvoke,
+  }]
+}) : []
 
 export function normalizeViewerRequest(request) {
   const rawItems = Array.isArray(request?.items) ? request.items : []
@@ -11,6 +27,8 @@ export function normalizeViewerRequest(request) {
       width: boundedNumber(item.width, undefined),
       height: boundedNumber(item.height, undefined),
       bytes: boundedNumber(item.bytes, undefined),
+      download: downloadOf(item.download),
+      actions: actionsOf(item.actions),
     }]
   })
   if (items.length === 0) return undefined
@@ -21,7 +39,6 @@ export function normalizeViewerRequest(request) {
     opener: typeof HTMLElement !== 'undefined' && request?.opener instanceof HTMLElement ? request.opener : undefined,
     source: typeof request?.source === 'string' ? request.source : 'dsh',
     annotations: request?.annotations !== false,
-    editor: request?.editor,
   }
 }
 
@@ -29,6 +46,7 @@ export class NativeImageViewerService {
   #listeners = new Set()
   #revision = 0
   #snapshot
+  #annotationsByImage = new Map()
 
   constructor() {
     this.subscribe = listener => {
@@ -36,6 +54,15 @@ export class NativeImageViewerService {
       return () => { this.#listeners.delete(listener) }
     }
     this.getSnapshot = () => this.#snapshot
+    this.getAnnotationsSnapshot = () => Object.fromEntries(
+      [...this.#annotationsByImage].map(([id, annotations]) => [id, annotations.map(annotation => ({ ...annotation }))]),
+    )
+  }
+
+  setAnnotations(imageId, annotations) {
+    if (typeof imageId !== 'string' || imageId === '' || !Array.isArray(annotations)) return
+    if (annotations.length === 0) this.#annotationsByImage.delete(imageId)
+    else this.#annotationsByImage.set(imageId, annotations.map(annotation => ({ ...annotation })))
   }
 
   open(request) {
