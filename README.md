@@ -39,21 +39,15 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 
 Install the Beta:
 
-```powershell
-irm 'https://github.com/WSL043/dsh-image-viewer/releases/download/v0.1.0-beta.3/install.ps1' | iex
-```
-
-Or use the official DSH command directly:
-
 ```sh
 dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.3
 ```
 
-Restart DSH manually after saving active work. The installer never needs access to provider credentials or image-generation accounts.
+Restart DSH manually after saving active work. The plugin never needs access to provider credentials or image-generation accounts.
 
 ## Update
 
-Run the same version-pinned PowerShell helper or official `add` command for the version you want to install.
+Run the same version-pinned `dsh plugin ... add` command for the version you want to install.
 
 ## Uninstall
 

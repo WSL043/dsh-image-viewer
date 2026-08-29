@@ -39,12 +39,6 @@
 
 安装 Beta：
 
-```powershell
-irm 'https://github.com/WSL043/dsh-image-viewer/releases/download/v0.1.0-beta.3/install.ps1' | iex
-```
-
-也可以直接使用 DSH 官方命令：
-
 ```sh
 dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.3
 ```
@@ -53,7 +47,7 @@ dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.3
 
 ## 更新
 
-使用目标版本对应的固定 PowerShell 助手或官方 `add` 命令更新。
+使用目标版本对应的固定 `dsh plugin ... add` 命令更新。
 
 ## 卸载
 
