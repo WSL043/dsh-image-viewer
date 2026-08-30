@@ -37,7 +37,7 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 Install the Beta:
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.5
+dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.6
 ```
 
 Restart DSH manually after saving active work. The plugin never needs access to provider credentials or image-generation accounts.
