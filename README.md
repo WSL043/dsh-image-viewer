@@ -36,7 +36,7 @@
 安装 Beta：
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.6
+dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.7
 ```
 
 保存正在进行的工作后手动重启 DSH。本插件不需要供应商凭据或图片生成账户权限。

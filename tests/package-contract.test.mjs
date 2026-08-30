@@ -112,7 +112,7 @@ test('release is gated by checks, an immutable draft, and the recommended npm ta
   assert.match(publish, /npm view "dsh-image-viewer@\$version" dist\.tarball/u)
   assert.match(publish, /diff -qr --strip-trailing-cr --exclude='\*\.map'/u)
   assert.match(publish, /cp "\$RUNNER_TEMP\/npm\.tgz" \.release\/dsh-image-viewer\.tgz/u)
-  assert.match(publish, /npm publish \.release\/dsh-image-viewer\.tgz --access public --tag latest/u)
+  assert.match(publish, /npm publish \.release\/dsh-image-viewer\.tgz --access public --tag beta/u)
   assert.ok(publish.indexOf('Publish or reconcile with npm') < publish.indexOf('Create verified draft release'))
   assert.match(publish, /--draft=false --prerelease/u)
   assert.match(publish, /dsh plugin --profile web add dsh-image-viewer/u)
