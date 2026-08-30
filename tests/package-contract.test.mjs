@@ -97,7 +97,7 @@ test('issue intake defaults to concise English forms without title prefixes', as
   assert.match(forms[0], /Plugin version[\s\S]*DSH version/u)
 })
 
-test('release is gated by checks, an immutable draft, and npm beta publishing', async () => {
+test('release is gated by checks, an immutable draft, and the recommended npm tag', async () => {
   const [ci, publish] = await Promise.all([
     readFile(new URL('.github/workflows/ci.yml', root), 'utf8'),
     readFile(new URL('.github/workflows/publish.yml', root), 'utf8'),
@@ -112,7 +112,7 @@ test('release is gated by checks, an immutable draft, and npm beta publishing', 
   assert.match(publish, /npm view "dsh-image-viewer@\$version" dist\.tarball/u)
   assert.match(publish, /diff -qr --strip-trailing-cr --exclude='\*\.map'/u)
   assert.match(publish, /cp "\$RUNNER_TEMP\/npm\.tgz" \.release\/dsh-image-viewer\.tgz/u)
-  assert.match(publish, /npm publish \.release\/dsh-image-viewer\.tgz --access public --tag beta/u)
+  assert.match(publish, /npm publish \.release\/dsh-image-viewer\.tgz --access public --tag latest/u)
   assert.ok(publish.indexOf('Publish or reconcile with npm') < publish.indexOf('Create verified draft release'))
   assert.match(publish, /--draft=false --prerelease/u)
   assert.match(publish, /dsh plugin --profile web add dsh-image-viewer/u)
