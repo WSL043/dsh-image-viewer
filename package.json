@@ -62,7 +62,8 @@
   },
   "homepage": "https://github.com/WSL043/dsh-image-viewer#readme",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "tag": "beta"
   },
   "packageManager": "pnpm@11.19.0",
   "engines": {
