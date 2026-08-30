@@ -173,7 +173,7 @@ jobs:
               cp "$RUNNER_TEMP/npm.tgz" .release/dsh-image-viewer.tgz
             fi
           else
-            npm publish .release/dsh-image-viewer.tgz --access public --tag latest
+            npm publish .release/dsh-image-viewer.tgz --access public --tag beta
           fi
       - name: Create verified draft release
         env:
