@@ -1,3 +1,6 @@
+> [!NOTE]
+> This project is in maintenance mode. It will receive fixes for official DSH compatibility, security, and defects in the existing view, download, and annotation flows, but it will not grow into a separate image workflow or ship as a DSH-Portable default. Image-producing plugins may still use it as an optional shared viewer.
+
 <div align="center">
 
 # DSH Image Viewer
