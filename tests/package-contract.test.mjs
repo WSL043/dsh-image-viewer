@@ -3,6 +3,14 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 const root = new URL('../', import.meta.url)
 
+test('official DSH acceptance allows only the reviewed pnpm build dependencies', async () => {
+  const script = await readFile(new URL('.github/scripts/accept-official-release.ps1', root), 'utf8')
+  for (const dependency of ['@deepseek-ai/dsh-subprocess-local', '@google/genai', 'koffi', 'node-pty', 'protobufjs']) {
+    assert.equal(script.includes(`--allow-build=${dependency}`), true, dependency)
+  }
+  assert.equal(script.includes('dangerously-allow-all-builds'), false)
+})
+
 test('declares one optional web client plugin', async () => {
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
   const compatibility = JSON.parse(await readFile(new URL('compatibility.json', root), 'utf8'))

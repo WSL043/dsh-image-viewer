@@ -10,7 +10,16 @@ param(
 $ErrorActionPreference = 'Stop'
 $package = (Resolve-Path -LiteralPath $PackagePath).Path
 $runner = Get-Command $DshRunner -CommandType Application -ErrorAction Stop | Select-Object -First 1
-$runnerPrefix = @('--config.minimum-release-age=0', 'dlx', "@deepseek-ai/dsh@$DshVersion")
+$runnerPrefix = @(
+    '--config.minimum-release-age=0',
+    'dlx',
+    '--allow-build=@deepseek-ai/dsh-subprocess-local',
+    '--allow-build=@google/genai',
+    '--allow-build=koffi',
+    '--allow-build=node-pty',
+    '--allow-build=protobufjs',
+    "@deepseek-ai/dsh@$DshVersion"
+)
 $acceptanceRoot = Join-Path ([IO.Path]::GetTempPath()) ('dsh-image-viewer-official-' + [Guid]::NewGuid().ToString('N'))
 $previousDshHome = $env:DSH_HOME
 $env:DSH_HOME = Join-Path $acceptanceRoot 'dsh-home'
