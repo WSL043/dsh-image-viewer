@@ -17,6 +17,8 @@ test('declares one optional web client plugin', async () => {
   assert.equal(pkg.name, 'dsh-image-viewer')
   assert.match(pkg.version, /^\d+\.\d+\.\d+-beta\.\d+$/u)
   assert.equal(pkg.publishConfig.tag, 'beta')
+  assert.equal(compatibility.latestTested, '0.1.2-rc.1')
+  assert.ok(compatibility.supported.includes('0.1.2-rc.1'))
   assert.equal(pkg.dsh.client.platform, 'web')
   assert.ok(pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-layout'))
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
@@ -26,6 +28,8 @@ test('declares one optional web client plugin', async () => {
   for (const [name, version] of Object.entries(pkg.peerDependencies)) {
     if (name.startsWith('@deepseek-ai/dsh-')) assert.equal(version, range, name)
   }
+  const acceptance = await readFile(new URL('.github/scripts/accept-official-release.ps1', root), 'utf8')
+  assert.match(acceptance, /\[string\] \$DshVersion = '0\.1\.2-rc\.1'/u)
 })
 test('uses the additive shell overlay and an optional service', async () => {
   const source = await readFile(new URL('src/client.jsx', root), 'utf8')
