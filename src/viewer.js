@@ -94,16 +94,20 @@ export function nativeImageButton(target) {
   if (!(button instanceof HTMLButtonElement)) return undefined
   const image = button.querySelector(':scope > img')
   if (!(image instanceof HTMLImageElement) || image.currentSrc === '') return undefined
-  if (button.matches('[data-variant="single"],[data-variant="tile"]')) return { button, image, group: button.parentElement }
+  if (button.matches('[data-variant="single"],[data-variant="tile"]')) return { button, image, group: button.parentElement, kind: 'message' }
   const rail = button.closest('[role="group"]')
-  if (rail !== null && button.hasAttribute('title')) return { button, image, group: rail }
+  if (rail !== null && button.hasAttribute('title')) return { button, image, group: rail, kind: 'composer' }
   return undefined
 }
 
 export function imageItemsForButton(match) {
-  const buttons = match.group?.querySelectorAll('button[data-variant="single"],button[data-variant="tile"],button[title]')
+  const selector = match.kind === 'message'
+    ? ':scope > button[data-variant="single"],:scope > button[data-variant="tile"]'
+    : 'button[title]'
+  const buttons = match.group?.querySelectorAll(selector)
     ?? []
   const candidates = [...buttons].flatMap((button, index) => {
+    if (match.kind === 'composer' && button.closest('[role="group"]') !== match.group) return []
     const image = button.querySelector(':scope > img')
     if (!(image instanceof HTMLImageElement) || image.currentSrc === '') return []
     return [{

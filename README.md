@@ -10,7 +10,7 @@
 [![CI](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-image-viewer?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-image-viewer)
 [![npm 总下载量](https://img.shields.io/npm/dt/dsh-image-viewer?logo=npm&label=%E6%80%BB%E4%B8%8B%E8%BD%BD%E9%87%8F)](https://www.npmjs.com/package/dsh-image-viewer)
-[![状态](https://img.shields.io/badge/%E7%8A%B6%E6%80%81-Beta-7c3aed.svg)](#安装)
+[![状态](https://img.shields.io/badge/%E7%8A%B6%E6%80%81-Release%20candidate-7c3aed.svg)](#安装)
 [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/WSL043/dsh-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-image-viewer/stargazers)
 
@@ -18,7 +18,7 @@
 
 </div>
 
-> Beta：当前适配最新公开版 DSH。遇到无法识别的新图片结构时会保留 DSH 原生行为，不会猜测接管。
+> 正式版候选：供发布前试用，尚未发布到 npm。遇到无法识别的新图片结构时会保留 DSH 原生行为，不会猜测接管。
 
 稳定版与当前 Alpha 都在隔离环境验收真实附件的多图切换、缩放、拖动、下载、区域备注及关闭后焦点恢复。发布前必须通过；定时工作流每六小时检查官方新版本，失败保留浏览器和启动记录，不自动宣称兼容或发布。
 
@@ -40,10 +40,10 @@
 
 ## 安装
 
-安装 Beta：
+从收到的候选包安装：
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.11
+dsh plugin --profile web add ./dsh-image-viewer-0.1.0-rc.1.tgz
 ```
 
 保存正在进行的工作后手动重启 DSH。本插件不需要供应商凭据或图片生成账户权限。

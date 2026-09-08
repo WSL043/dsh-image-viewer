@@ -10,7 +10,7 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 [![CI](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-image-viewer?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-image-viewer)
 [![total npm downloads](https://img.shields.io/npm/dt/dsh-image-viewer?logo=npm&label=total%20downloads)](https://www.npmjs.com/package/dsh-image-viewer)
-[![status](https://img.shields.io/badge/status-Beta-7c3aed.svg)](#install)
+[![status](https://img.shields.io/badge/status-Release%20candidate-7c3aed.svg)](#install)
 [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/WSL043/dsh-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-image-viewer/stargazers)
 
@@ -18,7 +18,7 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 
 </div>
 
-> Beta: the viewer targets the latest public DSH release. Unsupported image markup is left untouched instead of being guessed.
+> Release candidate: for pre-release testing; not published to npm yet. Unsupported image markup is left untouched instead of being guessed.
 
 Release checks exercise real attachments on stable and current Alpha DSH: gallery navigation, zoom, pan, download, region notes, and focus restoration. A six-hour upstream check retains browser and startup evidence on failure; it does not automatically claim compatibility or publish a release.
 
@@ -41,10 +41,10 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 
 ## Install
 
-Install the Beta:
+Install the candidate archive you received:
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.11
+dsh plugin --profile web add ./dsh-image-viewer-0.1.0-rc.1.tgz
 ```
 
 Restart DSH manually after saving active work. The plugin never needs access to provider credentials or image-generation accounts.

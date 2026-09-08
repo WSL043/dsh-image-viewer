@@ -13,7 +13,7 @@ Use this guide only when the user asks to install, update, verify, or remove `ds
 ## Install or update
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.11
+dsh plugin --profile web add ./dsh-image-viewer-0.1.0-rc.1.tgz
 ```
 
 DSH-Portable exposes the same standard `dsh plugin` command. Do not use a private executable path in public instructions.
