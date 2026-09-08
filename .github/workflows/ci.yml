@@ -49,6 +49,14 @@ jobs:
       - name: Run zoom, pan, gallery, download, and annotation behavior
         run: pnpm run test:behavior
       - run: pnpm run build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: node scripts/test-viewer-browser.mjs .artifacts/browser
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: viewer-browser-failure
+          path: .artifacts/browser/
+          include-hidden-files: true
       - run: git diff --exit-code -- lib
       - run: pnpm pack --pack-destination .artifacts
       - uses: actions/upload-artifact@v7

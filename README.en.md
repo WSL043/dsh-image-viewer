@@ -30,6 +30,8 @@ Release checks exercise real attachments on stable and current Alpha DSH: galler
 
 - Wheel zoom centered on the pointer, drag-to-pan, touch pinch, and double-click 100% view.
 - Fit and original-size controls, original-file download, keyboard navigation, and multi-image galleries.
+- Visible filename, dimensions and pixel-scale percentage; very wide images can reach 100%, and window resizing keeps the image within reach.
+- Loading and retryable error states, gesture reset on image changes, and independent notes for unnamed images.
 - One-shot region marking with each note edited beside its numbered image marker. Enter saves and collapses the note;
   Shift+Enter adds a new line.
 - Light and dark themes through DSH design tokens, responsive layout, focus containment, and reduced-motion support.
@@ -42,7 +44,7 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 Install the Beta:
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.10
+dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.11
 ```
 
 Restart DSH manually after saving active work. The plugin never needs access to provider credentials or image-generation accounts.

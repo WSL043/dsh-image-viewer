@@ -57,7 +57,8 @@ try {
   await page.waitForFunction(() => document.querySelector('.niv-counter')?.textContent === '2 / 2')
   const before = await viewer.locator('.niv-zoom').innerText()
   await viewer.locator('.niv-stage').hover()
-  await page.mouse.wheel(0, -300)
+  // Make the fixture larger than the stage so pan exercises real overflow.
+  await page.mouse.wheel(0, -800)
   await page.waitForFunction(value => document.querySelector('.niv-zoom')?.textContent !== value, before)
   const surface = viewer.locator('.niv-surface')
   const transform = await surface.getAttribute('style')

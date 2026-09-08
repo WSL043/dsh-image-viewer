@@ -103,6 +103,17 @@ test('keeps region notes for the same image across overlay remounts', () => {
   assert.equal(service.getAnnotationsSnapshot()['blob:a'], undefined)
 })
 
+test('unnamed image identities do not reuse notes from another gallery', () => {
+  const service = new NativeImageViewerService()
+  service.open({ items: [{ src: 'blob:first' }] })
+  const first = service.getSnapshot().items[0].id
+  service.setAnnotations(first, [{ x: 0.5, y: 0.5, note: 'first image only' }])
+  service.open({ items: [{ src: 'blob:second' }] })
+  assert.equal(service.getAnnotationsSnapshot()[service.getSnapshot().items[0].id], undefined)
+  service.open({ items: [{ src: 'blob:first' }] })
+  assert.equal(service.getSnapshot().items[0].id, first)
+})
+
 test('collects both composer title images and uses the second image index', () => {
   withImageElementStub(ImageStub => {
     const firstImage = imageStub(ImageStub, 'blob:first', 'First')
