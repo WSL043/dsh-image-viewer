@@ -215,6 +215,8 @@ function ViewerOverlay({ service, t }) {
   }, [onWheel, request])
   const onPointerDown = event => {
     if (event.button !== 0 || annotating) return
+    if (event.target instanceof Element && event.target.closest('button,a,input,textarea,select')) return
+    if (event.pointerType === 'mouse' && transform.zoom <= 1) return
     event.currentTarget.setPointerCapture(event.pointerId)
     pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     if (pointersRef.current.size === 2) {

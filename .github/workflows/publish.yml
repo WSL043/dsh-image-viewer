@@ -24,8 +24,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  versions:
+    runs-on: ubuntu-latest
+    outputs:
+      dsh_versions: ${{ steps.versions.outputs.dsh_versions }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: 24, package-manager-cache: false }
+      - id: versions
+        run: node -e "const c=require('./compatibility.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'dsh_versions='+JSON.stringify([...new Set([c.latestTested,c.previews.at(-1)])])+'\n')"
   official-dsh-acceptance:
-    name: Official DSH end-to-end acceptance
+    name: Official DSH end-to-end acceptance (${{ matrix.dsh_version }})
+    needs: versions
+    strategy:
+      fail-fast: false
+      matrix:
+        dsh_version: ${{ fromJSON(needs.versions.outputs.dsh_versions) }}
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v6
@@ -40,9 +55,15 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm run build
       - run: pnpm pack --pack-destination .artifacts
-      - name: Accept install, Web startup, remove, and reinstall
+      - run: pnpm exec playwright install chromium
+      - name: Verify actual image operations and plugin lifecycle
         shell: pwsh
-        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .artifacts/dsh-image-viewer-*.tgz).FullName
+        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .artifacts/dsh-image-viewer-*.tgz).FullName -DshVersion '${{ matrix.dsh_version }}'
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: image-release-failure-${{ matrix.dsh_version }}
+          path: ${{ runner.temp }}/dsh-image-viewer-official-*/
   release:
     needs: official-dsh-acceptance
     runs-on: ubuntu-latest

@@ -20,6 +20,8 @@
 
 > Beta：当前适配最新公开版 DSH。遇到无法识别的新图片结构时会保留 DSH 原生行为，不会猜测接管。
 
+稳定版与当前 Alpha 都在隔离环境验收真实附件的多图切换、缩放、拖动、下载、区域备注及关闭后焦点恢复。发布前必须通过；定时工作流每六小时检查官方新版本，失败保留浏览器和启动记录，不自动宣称兼容或发布。
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-zh.png" width="900" alt="DSH 图片查看器展示插画、适应窗口、原始大小、下载和图片编号附近的区域备注">
 </p>
@@ -39,7 +41,7 @@
 安装 Beta：
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.9
+dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.10
 ```
 
 保存正在进行的工作后手动重启 DSH。本插件不需要供应商凭据或图片生成账户权限。

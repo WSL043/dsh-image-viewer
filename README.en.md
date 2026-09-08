@@ -20,6 +20,8 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 
 > Beta: the viewer targets the latest public DSH release. Unsupported image markup is left untouched instead of being guessed.
 
+Release checks exercise real attachments on stable and current Alpha DSH: gallery navigation, zoom, pan, download, region notes, and focus restoration. A six-hour upstream check retains browser and startup evidence on failure; it does not automatically claim compatibility or publish a release.
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-en.png" width="900" alt="DSH Image Viewer displaying an illustration with fit, original-size, download, and an inline numbered region note">
 </p>
@@ -40,7 +42,7 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 Install the Beta:
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.9
+dsh plugin --profile web add dsh-image-viewer@0.1.0-beta.10
 ```
 
 Restart DSH manually after saving active work. The plugin never needs access to provider credentials or image-generation accounts.
