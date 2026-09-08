@@ -4,7 +4,8 @@ param(
     [string] $DshVersion = '0.1.2-rc.1',
     [string] $Profile = 'web',
     [string] $DshRunner = 'pnpm',
-    [int] $StartupTimeoutSeconds = 45
+    [int] $StartupTimeoutSeconds = 45,
+    [string] $EvidenceRoot = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,7 +22,8 @@ $runnerPrefix = @(
     '--allow-build=protobufjs',
     "@deepseek-ai/dsh@$DshVersion"
 )
-$acceptanceRoot = Join-Path ([IO.Path]::GetTempPath()) ('dsh-image-viewer-official-' + [Guid]::NewGuid().ToString('N'))
+$acceptanceBase = if ($EvidenceRoot) { [IO.Path]::GetFullPath($EvidenceRoot) } else { [IO.Path]::GetTempPath() }
+$acceptanceRoot = Join-Path $acceptanceBase ('dsh-image-viewer-official-' + [Guid]::NewGuid().ToString('N'))
 $previousDshHome = $env:DSH_HOME
 $env:DSH_HOME = Join-Path $acceptanceRoot 'dsh-home'
 $passed = $false
@@ -115,9 +117,9 @@ try {
     $env:DSH_HOME = $previousDshHome
     $resolvedTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar)
     $resolvedAcceptance = [IO.Path]::GetFullPath($acceptanceRoot)
-    if ($passed -and $resolvedAcceptance.StartsWith($resolvedTemp + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -and
+    if ($passed -and -not $EvidenceRoot -and $resolvedAcceptance.StartsWith($resolvedTemp + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -and
         (Split-Path -Leaf $resolvedAcceptance) -like 'dsh-image-viewer-official-*') {
         Remove-Item -LiteralPath $resolvedAcceptance -Recurse -Force -ErrorAction SilentlyContinue
     }
-    if (-not $passed) { Write-Host "Acceptance evidence retained: $acceptanceRoot" }
+    if (-not $passed -or $EvidenceRoot) { Write-Host "Acceptance evidence retained: $acceptanceRoot" }
 }

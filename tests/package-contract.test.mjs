@@ -24,7 +24,7 @@ test('declares one optional web client plugin', async () => {
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
   assert.ok(pkg.files.includes('compatibility.json'))
   const range = [...compatibility.supported, ...compatibility.previews].join(' || ')
-  assert.deepEqual(compatibility.previews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2'])
+  assert.deepEqual(compatibility.previews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1'])
   for (const [name, version] of Object.entries(pkg.peerDependencies)) {
     if (name.startsWith('@deepseek-ai/dsh-')) assert.equal(version, range, name)
   }
@@ -39,7 +39,7 @@ test('uses the additive shell overlay and an optional service', async () => {
   assert.doesNotMatch(source, /MutationObserver/u)
 })
 test('ships zoom, pan, keyboard, gallery, download, and notes', async () => {
-  const source = await readFile(new URL('src/client.jsx', root), 'utf8')
+  const source = await readFile(new URL('src/client.jsx', root), 'utf8') + await readFile(new URL('src/image-transform.js', root), 'utf8')
   for (const marker of ['onPointerMove', 'setZoomAt', "event.key === 'ArrowLeft'", 'download=', 'copyNotes', 'focusNote']) {
     assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'))
   }
@@ -48,14 +48,14 @@ test('ships zoom, pan, keyboard, gallery, download, and notes', async () => {
   assert.match(source, /aria-label=\{annotating \? t\('cancelAnnotate'\) : t\('annotate'\)\}/u)
   assert.match(source, /aria-label=\{t\('fit'\)\}/u)
   assert.match(source, /transformRef\.current\.zoom/u)
-  assert.match(source, /addEventListener\('wheel', onWheel, \{ passive: false \}\)/u)
+  assert.match(source, /addEventListener\('wheel', wheel, \{ passive: false \}\)/u)
   assert.doesNotMatch(source, /onWheel=\{onWheel\}/u)
   assert.doesNotMatch(source, /\[request, service, fit, setZoomAt, transform\.zoom\]/u)
   assert.match(source, /item\.actions\.map/u)
   assert.match(source, /action\.onInvoke\(\{ annotations, item, src: item\.src \}\)/u)
   assert.match(source, /action\.closeOnSuccess/u)
   assert.match(source, /item\.download === undefined/u)
-  assert.match(source, /<ViewerDownload download=\{item\.download\}/u)
+  assert.match(source, /<ViewerDownload key=\{item\.src\} download=\{item\.download\}/u)
   assert.doesNotMatch(source, /request\.editor|className="niv-editor"/u)
   assert.doesNotMatch(source, /setEditorError|setPrompt|setBusy/u)
 })
@@ -81,7 +81,9 @@ test('edits each region note beside its numbered image marker', async () => {
   assert.match(source, /className="niv-inline-note"/u)
   assert.match(source, /annotation\.x < 0\.38/u)
   assert.match(source, /annotation\.x > 0\.62/u)
-  assert.match(source, /if \(event\.button !== 0 \|\| annotating\) return[\s\S]*?closest\('button,a,input,textarea,select'\)[\s\S]*?event\.currentTarget\.setPointerCapture/u)
+  const transform = await readFile(new URL('src/image-transform.js', root), 'utf8')
+  assert.match(source, /!annotating && imageState === 'ready' \? pointerHandlers/u)
+  assert.match(transform, /closest\('button,a,input,textarea,select'\)[\s\S]*?setPointerCapture/u)
   assert.match(source, /data-y=\{annotation\.y < 0\.28/u)
   assert.match(source, /setAnnotations\(current => \[\.\.\.current, annotation\]\)\s+setAnnotating\(false\)/u)
   assert.match(source, /event\.key === 'Enter' && !event\.shiftKey/u)

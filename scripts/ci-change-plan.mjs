@@ -78,6 +78,7 @@ const delivery = planner || changed([
   /^tests\/.*(?:contract|release|package|compat).*\.test\.(?:mjs|js)$/u,
 ])
 const behavior = planner || runtime || changed([
+  /^scripts\/test-viewer-browser\.mjs$/u,
   /^compatibility\.json$/u,
   /^package(?:-lock)?\.json$/u,
   /^pnpm-lock\.yaml$/u,
