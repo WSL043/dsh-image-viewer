@@ -101,8 +101,7 @@ export function nativeImageButton(target) {
 }
 
 export function imageItemsForButton(match) {
-  const buttons = match.group?.querySelectorAll('button[data-variant]')
-    ?? match.group?.querySelectorAll('button[title]')
+  const buttons = match.group?.querySelectorAll('button[data-variant="single"],button[data-variant="tile"],button[title]')
     ?? []
   const candidates = [...buttons].flatMap((button, index) => {
     const image = button.querySelector(':scope > img')

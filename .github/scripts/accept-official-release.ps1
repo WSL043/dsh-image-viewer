@@ -13,6 +13,7 @@ $runner = Get-Command $DshRunner -CommandType Application -ErrorAction Stop | Se
 $runnerPrefix = @(
     '--config.minimum-release-age=0',
     'dlx',
+    '--allow-build=fs-ext',
     '--allow-build=@deepseek-ai/dsh-subprocess-local',
     '--allow-build=@google/genai',
     '--allow-build=koffi',
@@ -23,7 +24,10 @@ $runnerPrefix = @(
 $acceptanceRoot = Join-Path ([IO.Path]::GetTempPath()) ('dsh-image-viewer-official-' + [Guid]::NewGuid().ToString('N'))
 $previousDshHome = $env:DSH_HOME
 $env:DSH_HOME = Join-Path $acceptanceRoot 'dsh-home'
+$passed = $false
 New-Item -ItemType Directory -Path $acceptanceRoot | Out-Null
+$workspace = Join-Path $acceptanceRoot 'workspace'
+New-Item -ItemType Directory -Path $workspace | Out-Null
 
 function Invoke-Dsh {
     param([Parameter(Mandatory = $true)][string[]] $Arguments)
@@ -64,7 +68,7 @@ function Start-And-ProbeWeb {
     $stdout = Join-Path $acceptanceRoot 'web.stdout.log'
     $stderr = Join-Path $acceptanceRoot 'web.stderr.log'
     $arguments = @($runnerPrefix) + @('--profile', $Profile, '--no-open', '--port', [string] $port)
-    $process = Start-Process -FilePath $runner.Source -ArgumentList $arguments -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+    $process = Start-Process -FilePath $runner.Source -ArgumentList $arguments -WorkingDirectory $workspace -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     try {
         $deadline = [DateTime]::UtcNow.AddSeconds($StartupTimeoutSeconds)
         $response = $null
@@ -83,26 +87,37 @@ function Start-And-ProbeWeb {
             } catch { Start-Sleep -Milliseconds 250 }
         }
         if (-not $response -or $response.StatusCode -ne 200 -or $response.Content -notmatch 'DeepSeek Harness') { throw 'DSH Web did not become ready with the candidate plugin.' }
+        & node (Join-Path $PSScriptRoot '../../scripts/accept-browser.mjs') $readinessUrl $acceptanceRoot
+        if ($LASTEXITCODE -ne 0) { throw 'Official image browser acceptance failed.' }
     } finally {
         if (-not $process.HasExited) { & taskkill.exe /PID $process.Id /T /F 2>$null | Out-Null }
     }
 }
 
 try {
+    Push-Location -LiteralPath $workspace
     Invoke-Dsh @('plugin', '--profile', $Profile, 'add', $package, '--loglevel', 'error')
     Assert-InstalledOnce
+    $ErrorActionPreference = 'Continue'
+    try { & $runner.Source @runnerPrefix --profile headless 'Image viewer synthetic acceptance' *> (Join-Path $acceptanceRoot 'seed.log') }
+    finally { $ErrorActionPreference = 'Stop' }
+    $transcripts = @(Get-ChildItem -LiteralPath (Join-Path $env:DSH_HOME 'sessions') -Recurse -File | Where-Object { $_.Name -match '^session(\.v[1-9]\d*)?\.jsonl(\.zstd)?$' })
+    if ($transcripts.Count -ne 1) { throw 'Official DSH did not create exactly one synthetic session; inspect seed.log.' }
     Start-And-ProbeWeb
     Invoke-Dsh @('plugin', '--profile', $Profile, 'remove', 'dsh-image-viewer', '--loglevel', 'error')
     Assert-Removed
     Invoke-Dsh @('plugin', '--profile', $Profile, 'add', $package, '--loglevel', 'error')
     Assert-InstalledOnce
     Write-Host 'Official DSH image-viewer acceptance passed.'
+    $passed = $true
 } finally {
+    Pop-Location
     $env:DSH_HOME = $previousDshHome
     $resolvedTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar)
     $resolvedAcceptance = [IO.Path]::GetFullPath($acceptanceRoot)
-    if ($resolvedAcceptance.StartsWith($resolvedTemp + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -and
+    if ($passed -and $resolvedAcceptance.StartsWith($resolvedTemp + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -and
         (Split-Path -Leaf $resolvedAcceptance) -like 'dsh-image-viewer-official-*') {
         Remove-Item -LiteralPath $resolvedAcceptance -Recurse -Force -ErrorAction SilentlyContinue
     }
+    if (-not $passed) { Write-Host "Acceptance evidence retained: $acceptanceRoot" }
 }

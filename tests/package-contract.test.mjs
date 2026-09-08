@@ -5,7 +5,7 @@ const root = new URL('../', import.meta.url)
 
 test('official DSH acceptance allows only the reviewed pnpm build dependencies', async () => {
   const script = await readFile(new URL('.github/scripts/accept-official-release.ps1', root), 'utf8')
-  for (const dependency of ['@deepseek-ai/dsh-subprocess-local', '@google/genai', 'koffi', 'node-pty', 'protobufjs']) {
+  for (const dependency of ['fs-ext', '@deepseek-ai/dsh-subprocess-local', '@google/genai', 'koffi', 'node-pty', 'protobufjs']) {
     assert.equal(script.includes(`--allow-build=${dependency}`), true, dependency)
   }
   assert.equal(script.includes('dangerously-allow-all-builds'), false)
@@ -24,7 +24,7 @@ test('declares one optional web client plugin', async () => {
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
   assert.ok(pkg.files.includes('compatibility.json'))
   const range = [...compatibility.supported, ...compatibility.previews].join(' || ')
-  assert.deepEqual(compatibility.previews, ['0.1.2-alpha.2', '0.1.2-alpha.3'])
+  assert.deepEqual(compatibility.previews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2'])
   for (const [name, version] of Object.entries(pkg.peerDependencies)) {
     if (name.startsWith('@deepseek-ai/dsh-')) assert.equal(version, range, name)
   }
@@ -81,7 +81,7 @@ test('edits each region note beside its numbered image marker', async () => {
   assert.match(source, /className="niv-inline-note"/u)
   assert.match(source, /annotation\.x < 0\.38/u)
   assert.match(source, /annotation\.x > 0\.62/u)
-  assert.match(source, /if \(event\.button !== 0 \|\| annotating\) return\s+event\.currentTarget\.setPointerCapture/u)
+  assert.match(source, /if \(event\.button !== 0 \|\| annotating\) return[\s\S]*?closest\('button,a,input,textarea,select'\)[\s\S]*?event\.currentTarget\.setPointerCapture/u)
   assert.match(source, /data-y=\{annotation\.y < 0\.28/u)
   assert.match(source, /setAnnotations\(current => \[\.\.\.current, annotation\]\)\s+setAnnotating\(false\)/u)
   assert.match(source, /event\.key === 'Enter' && !event\.shiftKey/u)
