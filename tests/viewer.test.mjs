@@ -21,22 +21,38 @@ const imageStub = (ImageStub, src, alt) => Object.assign(new ImageStub(), {
   naturalWidth: 120,
 })
 
-const buttonStub = (image, { title, variant } = {}) => ({
+const buttonStub = (image, { title, variant, parentGroup, roleGroup } = {}) => ({
   image,
   title,
   variant,
+  parentGroup,
+  roleGroup,
   querySelector(selector) {
     assert.equal(selector, ':scope > img')
     return this.image ?? null
   },
-})
-
-const groupStub = buttons => ({
-  querySelectorAll(selector) {
-    assert.equal(selector, 'button[data-variant="single"],button[data-variant="tile"],button[title]')
-    return buttons.filter(button => button.variant === 'single' || button.variant === 'tile' || button.title !== undefined)
+  closest(selector) {
+    assert.equal(selector, '[role="group"]')
+    return this.roleGroup ?? null
   },
 })
+
+const groupStub = buttons => {
+  const group = {
+    querySelectorAll(selector) {
+      if (selector === ':scope > button[data-variant="single"],:scope > button[data-variant="tile"]') {
+        return buttons.filter(button => button.parentGroup === group && (button.variant === 'single' || button.variant === 'tile'))
+      }
+      assert.equal(selector, 'button[title]')
+      return buttons.filter(button => button.title !== undefined)
+    },
+  }
+  for (const button of buttons) {
+    if (button.parentGroup === undefined) button.parentGroup = group
+    if (button.roleGroup === undefined) button.roleGroup = group
+  }
+  return group
+}
 
 test('normalizes a bounded gallery request', () => {
   const value = normalizeViewerRequest({
@@ -125,6 +141,7 @@ test('collects both composer title images and uses the second image index', () =
       button: secondButton,
       image: secondImage,
       group: groupStub([firstButton, nonImageButton, secondButton]),
+      kind: 'composer',
     })
 
     assert.deepEqual(result.items.map(item => item.src), ['blob:first', 'blob:second'])
@@ -142,9 +159,33 @@ test('keeps message single and tile images in DOM order', () => {
       button: tileButton,
       image: tileImage,
       group: groupStub([singleButton, tileButton]),
+      kind: 'message',
     })
 
     assert.deepEqual(result.items.map(item => item.src), ['blob:single', 'blob:tile'])
+    assert.equal(result.index, 1)
+  })
+})
+
+test('message galleries ignore titled image controls and nested image groups', () => {
+  withImageElementStub(ImageStub => {
+    const firstImage = imageStub(ImageStub, 'blob:first', 'First')
+    const secondImage = imageStub(ImageStub, 'blob:second', 'Second')
+    const controlImage = imageStub(ImageStub, 'blob:control', 'Control')
+    const nestedImage = imageStub(ImageStub, 'blob:nested', 'Nested')
+    const firstButton = buttonStub(firstImage, { variant: 'single' })
+    const secondButton = buttonStub(secondImage, { variant: 'tile' })
+    const titledImageControl = buttonStub(controlImage, { title: 'Open control' })
+    const nestedImageButton = buttonStub(nestedImage, { variant: 'tile' })
+    groupStub([nestedImageButton])
+    const result = imageItemsForButton({
+      button: secondButton,
+      image: secondImage,
+      group: groupStub([firstButton, secondButton, titledImageControl, nestedImageButton]),
+      kind: 'message',
+    })
+
+    assert.deepEqual(result.items.map(item => item.src), ['blob:first', 'blob:second'])
     assert.equal(result.index, 1)
   })
 })

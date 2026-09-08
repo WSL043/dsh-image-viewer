@@ -50,16 +50,19 @@ const noteText = (annotations, t) => annotations.map((annotation, index) => {
   return `${label} (${Math.round(annotation.x * 100)}%, ${Math.round(annotation.y * 100)}%): ${annotation.note.trim()}`
 }).filter(line => !line.endsWith(': ')).join('\n')
 
-function ViewerAction({ action, annotations, item, service }) {
+function ViewerAction({ action, annotations, item, service, revision }) {
   const [state, setState] = useState('idle')
+  const active = useRef(true)
+  useEffect(() => { active.current = true; return () => { active.current = false } }, [])
   const invoke = async () => {
     if (state === 'pending') return
     setState('pending')
     try {
       await action.onInvoke({ annotations, item, src: item.src })
+      if (!active.current || service.getSnapshot()?.revision !== revision) return
       setState('idle')
       if (action.closeOnSuccess) service.close()
-    } catch { setState('failed') }
+    } catch { if (active.current) setState('failed') }
   }
   const label = state === 'pending' ? action.pendingLabel : state === 'failed' ? action.errorLabel : action.label
   return <button type="button" className="niv-button" disabled={state === 'pending'} onClick={() => { void invoke() }}><span className="niv-label">{label}</span></button>
@@ -67,18 +70,54 @@ function ViewerAction({ action, annotations, item, service }) {
 
 function ViewerDownload({ download, item, t }) {
   const [state, setState] = useState('idle')
+  const controller = useRef(null)
+  const buttonRef = useRef(null)
+  const restoreFocus = useRef(false)
+  useEffect(() => () => { controller.current?.abort() }, [])
+  useEffect(() => {
+    if (state === 'pending' || !restoreFocus.current) return
+    restoreFocus.current = false
+    if (document.activeElement === document.body) buttonRef.current?.focus()
+  }, [state])
   const invoke = async () => {
-    if (state === 'pending') return
+    if (controller.current !== null) return
+    const operation = new AbortController()
+    controller.current = operation
+    restoreFocus.current = document.activeElement === buttonRef.current
     setState('pending')
-    try { await download.onInvoke({ item, src: item.src }); setState('idle') } catch { setState('failed') }
+    try {
+      if (download !== undefined) await download.onInvoke({ item, src: item.src })
+      else {
+        const response = await fetch(item.src, { signal: operation.signal })
+        if (!response.ok) throw new Error(`Image download failed: ${response.status}`)
+        const blob = await response.blob()
+        if (operation.signal.aborted) return
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = downloadName(item.name)
+        document.body.append(link)
+        link.click()
+        link.remove()
+        // Keep the URL alive while the browser takes ownership of the download.
+        setTimeout(() => URL.revokeObjectURL(url), 60_000)
+      }
+      if (!operation.signal.aborted) setState('idle')
+    } catch { if (!operation.signal.aborted) setState('failed') }
+    finally { if (controller.current === operation) controller.current = null }
   }
-  const label = state === 'pending' ? download.pendingLabel ?? t('preparing') : state === 'failed' ? download.errorLabel ?? t('failed') : t('download')
-  return <button type="button" className="niv-download" disabled={state === 'pending'} onClick={() => { void invoke() }}><IconDownloadOutline16 /><span className="niv-label">{label}</span></button>
+  const label = state === 'pending' ? download?.pendingLabel ?? t('preparing') : state === 'failed' ? download?.errorLabel ?? t('failed') : t('download')
+  return <button ref={buttonRef} type="button" className="niv-download" aria-label={label} disabled={state === 'pending'} onClick={() => { void invoke() }}><IconDownloadOutline16 /><span className="niv-label">{label}</span></button>
 }
 
 function ViewerOverlay({ service, t }) {
   const request = useSyncExternalStore(service.subscribe, service.getSnapshot)
-  const [index, setIndex] = useState(0)
+  const [cursor, setCursor] = useState({ revision: 0, index: 0 })
+  const index = cursor.revision === request?.revision ? cursor.index : request?.index ?? 0
+  const setIndex = update => setCursor(current => ({
+    revision: request.revision,
+    index: typeof update === 'function' ? update(current.revision === request.revision ? current.index : request.index) : update,
+  }))
   const [imageState, setImageState] = useState('loading')
   const [attempt, setAttempt] = useState(0)
   const [copyFailed, setCopyFailed] = useState(false)
@@ -93,7 +132,6 @@ function ViewerOverlay({ service, t }) {
 
   useEffect(() => {
     if (request === undefined) return
-    setIndex(request.index)
     setAnnotating(false)
     setSelected(undefined)
     setCopied(false)
@@ -110,6 +148,8 @@ function ViewerOverlay({ service, t }) {
     annotationsByImageRef.current = snapshot
     service.setAnnotations(item.id, next)
     setAnnotationsByImage(snapshot)
+    setCopied(false)
+    setCopyFailed(false)
   }, [item?.id, service])
 
   useEffect(() => {
@@ -124,6 +164,7 @@ function ViewerOverlay({ service, t }) {
         event.stopPropagation()
         if (event.target instanceof Element && event.target.closest('.niv-inline-note') !== null) {
           setSelected(undefined)
+          rootRef.current?.focus()
           return
         }
         service.close()
@@ -210,10 +251,9 @@ function ViewerOverlay({ service, t }) {
         <button type="button" className="niv-button" aria-label={t('fit')} onClick={fit}><IconFullscreenOutline16 /><span className="niv-label">{t('fit')}</span></button>
         <button type="button" className="niv-button" disabled={imageState !== 'ready'} onClick={actual}>{t('actual')}</button>
         <span className="niv-zoom">{Math.round(transform.zoom * pixelScale * 100)}%</span>
-        {item.download === undefined
-          ? <a className="niv-download" href={item.src} download={downloadName(item.name)}><IconDownloadOutline16 /><span className="niv-label">{t('download')}</span></a>
-          : <ViewerDownload key={item.src} download={item.download} item={item} t={t} />}
-        {item.actions.map(action => <ViewerAction action={action} annotations={annotations} item={item} service={service} key={`${item.src}:${action.id}`} />)}
+        <ViewerDownload key={`${request.revision}:${item.src}`} download={item.download} item={item} t={t} />
+        {annotations.some(annotation => annotation.note.trim() !== '') ? <button type="button" className="niv-button niv-copy-notes" aria-label={copyFailed ? t('copyFailed') : copied ? t('copied') : t('copyNotes')} onClick={() => { void copyNotes() }}><IconCopyOutline16 /><span className="niv-label">{copyFailed ? t('copyFailed') : copied ? t('copied') : t('copyNotes')}</span></button> : null}
+        {item.actions.map(action => <ViewerAction action={action} annotations={annotations} item={item} service={service} revision={request.revision} key={`${request.revision}:${item.src}:${action.id}`} />)}
       </div>
     </header>
     <button type="button" className="niv-close-floating" aria-label={t('close')} onClick={() => service.close()}><IconCloseOutline16 /></button>
@@ -227,14 +267,16 @@ function ViewerOverlay({ service, t }) {
             {selected === annotation.id ? <div className="niv-inline-note" data-note-id={annotation.id} onClick={event => event.stopPropagation()}>
               <span className="niv-inline-index">{position + 1}</span>
               <textarea value={annotation.note} rows={1} aria-label={fill(t('note'), { value: position + 1 })} placeholder={t('notePlaceholder')} onChange={event => { const note = event.target.value; setAnnotations(current => current.map(entry => entry.id === annotation.id ? { ...entry, note } : entry)) }} onKeyDown={event => {
+                if (event.nativeEvent?.isComposing || event.isComposing) return
                 if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'Escape') {
                   event.preventDefault()
                   event.stopPropagation()
                   event.nativeEvent?.stopImmediatePropagation?.()
                   setSelected(undefined)
+                  rootRef.current?.focus()
                 }
               }} />
-              <button type="button" className="niv-note-remove" aria-label={t('removeNote')} onClick={event => { event.stopPropagation(); setAnnotations(current => current.filter(entry => entry.id !== annotation.id)); setSelected(undefined) }}><IconCloseOutline16 /></button>
+              <button type="button" className="niv-note-remove" aria-label={t('removeNote')} onClick={event => { event.stopPropagation(); setAnnotations(current => current.filter(entry => entry.id !== annotation.id)); setSelected(undefined); rootRef.current?.focus() }}><IconCloseOutline16 /></button>
             </div> : null}
           </div>)}
         </div>
@@ -244,7 +286,7 @@ function ViewerOverlay({ service, t }) {
           <span className="niv-counter">{index + 1} / {request.items.length}</span>
         </> : annotating ? <span className="niv-hint">{t('regionHint')}</span> : transform.zoom === 1 ? <span className="niv-hint">{t('zoomHint')}</span> : null}
       </main>
-      {annotations.some(annotation => annotation.note.trim() !== '') ? <button type="button" className="niv-copy-notes" onClick={() => { void copyNotes() }}><IconCopyOutline16 />{copyFailed ? t('copyFailed') : copied ? t('copied') : t('copyNotes')}</button> : null}
+
     </div>
   </div>
 }
