@@ -4,6 +4,7 @@ import { createServer } from 'node:http'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
+import { checkAnnotationZoom } from './annotation-zoom-check.mjs'
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const evidence = process.argv[2] ?? join(repo, '.artifacts', 'viewer-browser')
 const clientPath = join(repo, 'lib', 'client.js')
@@ -137,6 +138,8 @@ try {
     }, { name: expected.name, src: expected.src })
   }
   const close = async () => { await page.locator('.niv-root').focus(); await page.keyboard.press('Escape'); await page.locator('.niv-root').waitFor({ state: 'hidden' }) }
+  await checkAnnotationZoom({ page, open, waitReady, normal, evidence })
+  checks.push('annotation raster stays sharp across zoom with pan and resize anchoring')
   const waitCounter = expected => page.waitForFunction(value => document.querySelector('.niv-counter')?.textContent === value, expected)
   const waitImageAlt = expected => page.waitForFunction(value => document.querySelector('.niv-image')?.alt === value, expected)
   const readTransform = () => page.evaluate(() => {
