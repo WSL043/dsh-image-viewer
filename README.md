@@ -3,9 +3,11 @@
 
 <div align="center">
 
-# DSH 图片查看器
+# DSH Image Viewer · 图片查看器
 
 面向 DeepSeek Harness 的简洁、与模型和供应商无关的图片查看器。它只增强 DSH 已经显示的图片，不替换会话、附件或模型流程。
+
+插件包名：`dsh-image-viewer`。支持图片缩放、原图下载、图库浏览与区域标注。[Awesome DSH 收录](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/data/plugins/WSL043__dsh-image-viewer.yml) · [会话管理插件](https://github.com/WSL043/dsh-chat-manager)
 
 [![CI](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-image-viewer?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-image-viewer)
