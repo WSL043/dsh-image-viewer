@@ -10,6 +10,7 @@ import {
 } from './viewer.js'
 import { CSS as VIEWER_CSS } from './styles.js'
 import { useImageTransform } from './image-transform.js'
+import { downloadPercent, readImageBlob } from './image-download.js'
 
 export const name = 'dsh-image-viewer'
 export const inject = ['locale', 'slots']
@@ -21,7 +22,7 @@ const LOCALES = {
     note: 'Region {value}', notePlaceholder: 'Describe what should change here…', removeNote: 'Remove region note',
     hideNotes: 'Hide notes', copyNotes: 'Copy notes', copied: 'Copied', previous: 'Previous image', next: 'Next image',
     zoomHint: 'Wheel to zoom · drag to pan · double-click for 100%', preparing: 'Preparing…', failed: 'Could not prepare this image.',
-    loading: 'Loading image…', loadFailed: 'Image could not be loaded.', retry: 'Retry', copyFailed: 'Copy failed. Try again.',
+    cancelDownload: 'Cancel download', cancel: 'Cancel', loading: 'Loading image…', loadFailed: 'Image could not be loaded.', retry: 'Retry', copyFailed: 'Copy failed. Try again.',
   },
   zh: {
     dialog: '图片查看器', close: '关闭', fit: '适应窗口', actual: '原始大小', download: '下载',
@@ -29,7 +30,7 @@ const LOCALES = {
     note: '区域 {value}', notePlaceholder: '描述这里需要怎样调整…', removeNote: '删除区域备注',
     hideNotes: '收起备注', copyNotes: '复制备注', copied: '已复制', previous: '上一张图片', next: '下一张图片',
     zoomHint: '滚轮缩放 · 拖动查看 · 双击切换原始大小', preparing: '正在准备…', failed: '暂时无法准备这张图片。',
-    loading: '正在加载图片…', loadFailed: '图片加载失败。', retry: '重试', copyFailed: '复制失败，请重试。',
+    cancelDownload: '取消下载', cancel: '取消', loading: '正在加载图片…', loadFailed: '图片加载失败。', retry: '重试', copyFailed: '复制失败，请重试。',
   },
 }
 
@@ -70,27 +71,31 @@ function ViewerAction({ action, annotations, item, service, revision }) {
 
 function ViewerDownload({ download, item, t }) {
   const [state, setState] = useState('idle')
+  const [progress, setProgress] = useState(undefined)
   const controller = useRef(null)
-  const buttonRef = useRef(null)
-  const restoreFocus = useRef(false)
-  useEffect(() => () => { controller.current?.abort() }, [])
-  useEffect(() => {
-    if (state === 'pending' || !restoreFocus.current) return
-    restoreFocus.current = false
-    if (document.activeElement === document.body) buttonRef.current?.focus()
-  }, [state])
+  useEffect(() => () => {
+    controller.current?.abort()
+    controller.current = null
+  }, [item.id, item.src, download])
   const invoke = async () => {
-    if (controller.current !== null) return
+    if (controller.current !== null) {
+      controller.current.abort()
+      controller.current = null
+      setState('idle')
+      setProgress(undefined)
+      return
+    }
     const operation = new AbortController()
     controller.current = operation
-    restoreFocus.current = document.activeElement === buttonRef.current
     setState('pending')
+    setProgress(undefined)
+    const onProgress = value => {
+      if (controller.current === operation) setProgress(downloadPercent(value))
+    }
     try {
-      if (download !== undefined) await download.onInvoke({ item, src: item.src })
+      if (download !== undefined) await download.onInvoke({ item, src: item.src, signal: operation.signal, onProgress })
       else {
-        const response = await fetch(item.src, { signal: operation.signal })
-        if (!response.ok) throw new Error(`Image download failed: ${response.status}`)
-        const blob = await response.blob()
+        const blob = await readImageBlob(item.src, { signal: operation.signal, onProgress })
         if (operation.signal.aborted) return
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
@@ -102,12 +107,12 @@ function ViewerDownload({ download, item, t }) {
         // Keep the URL alive while the browser takes ownership of the download.
         setTimeout(() => URL.revokeObjectURL(url), 60_000)
       }
-      if (!operation.signal.aborted) setState('idle')
-    } catch { if (!operation.signal.aborted) setState('failed') }
+      if (controller.current === operation) setState('idle')
+    } catch { if (controller.current === operation) setState('failed') }
     finally { if (controller.current === operation) controller.current = null }
   }
-  const label = state === 'pending' ? download?.pendingLabel ?? t('preparing') : state === 'failed' ? download?.errorLabel ?? t('failed') : t('download')
-  return <button ref={buttonRef} type="button" className="niv-download" aria-label={label} disabled={state === 'pending'} onClick={() => { void invoke() }}><IconDownloadOutline16 /><span className="niv-label">{label}</span></button>
+  const label = state === 'pending' ? `${download?.pendingLabel ?? t('preparing')}${progress === undefined ? '' : ` ${progress}%`} · ${t('cancel')}` : state === 'failed' ? download?.errorLabel ?? t('failed') : t('download')
+  return <button type="button" className="niv-download" aria-label={state === 'pending' ? t('cancelDownload') : label} title={label} onClick={() => { void invoke() }}><IconDownloadOutline16 /><span className="niv-label">{label}</span></button>
 }
 
 function ViewerOverlay({ service, t }) {
@@ -262,7 +267,7 @@ function ViewerOverlay({ service, t }) {
         <button type="button" className="niv-button" aria-label={t('fit')} onClick={fit}><IconFullscreenOutline16 /><span className="niv-label">{t('fit')}</span></button>
         <button type="button" className="niv-button" disabled={imageState !== 'ready'} onClick={actual}>{t('actual')}</button>
         <span className="niv-zoom">{Math.round(transform.zoom * pixelScale * 100)}%</span>
-        <ViewerDownload key={`${request.revision}:${item.src}`} download={item.download} item={item} t={t} />
+        <ViewerDownload key={`${request.revision}:${index}:${item.src}`} download={item.download} item={item} t={t} />
         {annotations.some(annotation => annotation.note.trim() !== '') ? <button type="button" className="niv-button niv-copy-notes" aria-label={copyFailed ? t('copyFailed') : copied ? t('copied') : t('copyNotes')} onClick={() => { void copyNotes() }}><IconCopyOutline16 /><span className="niv-label">{copyFailed ? t('copyFailed') : copied ? t('copied') : t('copyNotes')}</span></button> : null}
         {item.actions.map(action => <ViewerAction action={action} annotations={annotations} item={item} service={service} revision={request.revision} key={`${request.revision}:${item.src}:${action.id}`} />)}
       </div>
