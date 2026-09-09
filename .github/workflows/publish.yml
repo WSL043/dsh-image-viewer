@@ -90,9 +90,22 @@ jobs:
         run: |
           test "$GITHUB_REF" = refs/heads/main
           version="$(node -p "require('./package.json').version")"
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            npm_tag=latest
+            prerelease=false
+          elif [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta|rc)\.[0-9]+$ ]]; then
+            npm_tag=next
+            prerelease=true
+          else
+            echo "Unsupported package version: $version" >&2
+            exit 1
+          fi
+          {
+            echo "version=$version"
+            echo "tag=v$version"
+            echo "npm_tag=$npm_tag"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
       - name: Require a release-bearing plugin change
         shell: bash
         run: |
@@ -206,6 +219,8 @@ jobs:
         run: |
           set -euo pipefail
           version="${{ steps.version.outputs.version }}"
+          npm_tag="${{ steps.version.outputs.npm_tag }}"
+          prerelease="${{ steps.version.outputs.prerelease }}"
           latest_before="$(npm view dsh-image-viewer dist-tags.latest 2>/dev/null || true)"
           if tarball="$(npm view "dsh-image-viewer@$version" dist.tarball 2>/dev/null)"; then
             curl --fail --location --silent --show-error "$tarball" --output "$RUNNER_TEMP/npm.tgz"
@@ -217,43 +232,63 @@ jobs:
               cp "$RUNNER_TEMP/npm.tgz" .release/dsh-image-viewer.tgz
             fi
           else
-            npm publish .release/dsh-image-viewer.tgz --access public --tag beta
+            npm publish .release/dsh-image-viewer.tgz --access public --tag "$npm_tag"
           fi
-          beta_after=''
+          expected_latest="$version"
+          if [[ "$prerelease" == true ]]; then
+            expected_latest="$latest_before"
+          fi
+          tag_after=''
           latest_after=''
           for attempt in {1..60}; do
-            beta_after="$(npm view dsh-image-viewer dist-tags.beta 2>/dev/null || true)"
+            tag_after="$(npm view dsh-image-viewer "dist-tags.$npm_tag" 2>/dev/null || true)"
             latest_after="$(npm view dsh-image-viewer dist-tags.latest 2>/dev/null || true)"
-            if [[ "$beta_after" == "$version" && "$latest_after" == "$latest_before" ]]; then
+            if [[ "$tag_after" == "$version" && "$latest_after" == "$expected_latest" ]]; then
               break
             fi
             sleep 5
           done
-          if [[ "$beta_after" != "$version" || "$latest_after" != "$latest_before" ]]; then
-            echo "npm tag propagation did not reconcile: expected beta=$version/latest=$latest_before, observed beta=$beta_after/latest=$latest_after. The package may already be published; rerun reconciliation without changing its version." >&2
+          if [[ "$tag_after" != "$version" || "$latest_after" != "$expected_latest" ]]; then
+            echo "npm tag propagation did not reconcile: expected $npm_tag=$version/latest=$expected_latest, observed $npm_tag=$tag_after/latest=$latest_after. The package may already be published; rerun reconciliation without changing its version." >&2
             exit 1
           fi
       - name: Create verified draft release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
         shell: bash
         run: |
+          if [[ "$PRERELEASE" == true ]]; then
+            release_mode=(--draft --prerelease)
+            expected_prerelease=true
+          else
+            release_mode=(--draft --latest)
+            expected_prerelease=false
+          fi
           target=(--target "$GITHUB_SHA")
           if tagged_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.sha' 2>/dev/null)"; then
             test "$tagged_sha" = "$GITHUB_SHA"
             target=(--verify-tag)
           fi
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" "${target[@]}" \
-            --title "$TAG" --notes-file .release/release.md --draft --prerelease
+            --title "$TAG" --notes-file .release/release.md "${release_mode[@]}"
           gh release upload "$TAG" .release/dsh-image-viewer.tgz --repo "$GITHUB_REPOSITORY"
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets \
-            | jq -e '.isDraft == true and .isPrerelease == true and (.assets | any(.name == "dsh-image-viewer.tgz" and .size > 0))' >/dev/null
-      - name: Publish GitHub prerelease
+            | jq -e --argjson expected_prerelease "$expected_prerelease" \
+              '.isDraft == true and .isPrerelease == $expected_prerelease and (.assets | any(.name == "dsh-image-viewer.tgz" and .size > 0))' >/dev/null
+      - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
-        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        shell: bash
+        run: |
+          if [[ "$PRERELEASE" == true ]]; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
+          else
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          fi
       - name: Cleanup failed draft
         if: failure()
         env:
