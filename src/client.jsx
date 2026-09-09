@@ -138,7 +138,7 @@ function ViewerOverlay({ service, t }) {
   }, [request?.revision])
 
   const item = request?.items[index]
-  const { transform, transformRef, dragging, pixelScale, stageRef, surfaceRef, imageRef, fit, actual, measure, setZoomAt, resetGesture, pointerHandlers } = useImageTransform(`${request?.revision}:${item?.id}:${item?.src}`)
+  const { transform, transformRef, dragging, pixelScale, geometry, stageRef, surfaceRef, imageRef, fit, actual, measure, setZoomAt, resetGesture, pointerHandlers } = useImageTransform(`${request?.revision}:${item?.id}:${item?.src}`)
   const annotations = item === undefined ? [] : annotationsByImage[item.id] ?? []
   const setAnnotations = useCallback((update) => {
     if (item === undefined) return
@@ -242,6 +242,17 @@ function ViewerOverlay({ service, t }) {
   if (request === undefined || item === undefined) return null
   const meta = [item.width && item.height ? `${item.width} × ${item.height}` : undefined, bytesLabel(item.bytes)].filter(Boolean).join(' · ')
   const showCounter = request.items.length > 1
+  const annotationPosition = annotation => {
+    // Only the image is scaled. Notes stay in screen coordinates so their text
+    // is not rasterized inside a scaled compositor layer and then enlarged.
+    const ratio = globalThis.devicePixelRatio || 1
+    const align = value => Math.round(value * ratio) / ratio
+    return {
+      left: align(geometry.stageWidth / 2 + transform.x + (annotation.x - 0.5) * geometry.width * transform.zoom - 12),
+      top: align(geometry.stageHeight / 2 + transform.y + (annotation.y - 0.5) * geometry.height * transform.zoom - 12),
+      visibility: imageState === 'ready' ? 'visible' : 'hidden',
+    }
+  }
   return <div ref={rootRef} className="niv-root" role="dialog" aria-modal="true" aria-label={t('dialog')} tabIndex={-1}>
     <div className="niv-title"><strong>{item.name}</strong>{meta !== '' ? <small>{meta}</small> : null}</div>
     <header className="niv-topbar" role="toolbar" aria-label={t('dialog')}>
@@ -262,7 +273,8 @@ function ViewerOverlay({ service, t }) {
         {imageState !== 'ready' ? <div className="niv-load-status" role={imageState === 'error' ? 'alert' : 'status'}>{t(imageState === 'error' ? 'loadFailed' : 'loading')}{imageState === 'error' ? <button type="button" className="niv-button" onClick={() => { setImageState('loading'); setAttempt(value => value + 1) }}>{t('retry')}</button> : null}</div> : null}
         <div ref={surfaceRef} className="niv-surface" onClick={addAnnotation} style={{ visibility: imageState === 'ready' ? 'visible' : 'hidden', transform: `translate3d(${transform.x}px,${transform.y}px,0) scale(${transform.zoom})` }}>
           <img key={`${request.revision}:${item.id}:${attempt}`} ref={imageRef} className="niv-image" src={item.src} alt={item.name} draggable="false" onLoad={() => { setImageState('ready'); measure() }} onError={() => setImageState('error')} />
-          {annotations.map((annotation, position) => <div className="niv-annotation" data-x={annotation.x < 0.38 ? 'right' : annotation.x > 0.62 ? 'left' : 'center'} data-y={annotation.y < 0.28 ? 'down' : 'up'} style={{ left: `${annotation.x * 100}%`, top: `${annotation.y * 100}%`, transform: `translate(-50%,-50%) scale(${1 / transform.zoom})` }} key={annotation.id}>
+        </div>
+          {annotations.map((annotation, position) => <div className="niv-annotation" data-x={annotation.x < 0.38 ? 'right' : annotation.x > 0.62 ? 'left' : 'center'} data-y={annotation.y < 0.28 ? 'down' : 'up'} style={annotationPosition(annotation)} key={annotation.id}>
             <button type="button" className="niv-pin" data-active={selected === annotation.id} aria-label={fill(t('note'), { value: position + 1 })} onClick={event => { event.stopPropagation(); const opening = selected !== annotation.id; setSelected(opening ? annotation.id : undefined); if (opening) setFocusNote(annotation.id) }}>{position + 1}</button>
             {selected === annotation.id ? <div className="niv-inline-note" data-note-id={annotation.id} onClick={event => event.stopPropagation()}>
               <span className="niv-inline-index">{position + 1}</span>
@@ -279,7 +291,6 @@ function ViewerOverlay({ service, t }) {
               <button type="button" className="niv-note-remove" aria-label={t('removeNote')} onClick={event => { event.stopPropagation(); setAnnotations(current => current.filter(entry => entry.id !== annotation.id)); setSelected(undefined); rootRef.current?.focus() }}><IconCloseOutline16 /></button>
             </div> : null}
           </div>)}
-        </div>
         {showCounter ? <>
           <button type="button" className="niv-button niv-icon-only niv-nav niv-prev" aria-label={t('previous')} onClick={event => { event.stopPropagation(); setIndex(value => (value - 1 + request.items.length) % request.items.length) }}><IconChevronLeftOutline14 /></button>
           <button type="button" className="niv-button niv-icon-only niv-nav niv-next" aria-label={t('next')} onClick={event => { event.stopPropagation(); setIndex(value => (value + 1) % request.items.length) }}><IconChevronRightOutline14 /></button>

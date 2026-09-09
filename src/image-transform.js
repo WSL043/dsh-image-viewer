@@ -8,6 +8,7 @@ export function useImageTransform(identity) {
   const [transform, setTransform] = useState(fitted)
   const [dragging, setDragging] = useState(false)
   const [pixelScale, setPixelScale] = useState(1)
+  const [geometry, setGeometry] = useState({ width: 0, height: 0, stageWidth: 0, stageHeight: 0 })
   const stageRef = useRef(null), surfaceRef = useRef(null), imageRef = useRef(null)
   const transformRef = useRef(transform)
   const pointers = useRef(new Map()), gesture = useRef()
@@ -46,6 +47,9 @@ export function useImageTransform(identity) {
     setTransform({ zoom: actualScale(), x: 0, y: 0 })
   }, [resetGesture])
   const measure = useCallback(() => {
+    const next = { width: surfaceRef.current?.offsetWidth ?? 0, height: surfaceRef.current?.offsetHeight ?? 0,
+      stageWidth: stageRef.current?.clientWidth ?? 0, stageHeight: stageRef.current?.clientHeight ?? 0 }
+    setGeometry(current => Object.keys(next).every(key => current[key] === next[key]) ? current : next)
     setPixelScale(1 / actualScale())
     setTransform(current => ({ ...current, ...boundedPan(current.zoom, current.x, current.y) }))
   }, [boundedPan])
@@ -100,6 +104,6 @@ export function useImageTransform(identity) {
     if (remaining) gesture.current = { kind: 'pan', ...remaining, transform: transformRef.current }
     else resetGesture()
   }
-  return { transform, transformRef, dragging, pixelScale, stageRef, surfaceRef, imageRef, fit, actual, measure, setZoomAt, resetGesture,
+  return { transform, transformRef, dragging, pixelScale, geometry, stageRef, surfaceRef, imageRef, fit, actual, measure, setZoomAt, resetGesture,
     pointerHandlers: { onPointerDown, onPointerMove, onPointerUp: endPointer, onPointerCancel: endPointer, onLostPointerCapture: endPointer } }
 }
