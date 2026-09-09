@@ -15,8 +15,9 @@ test('declares one optional web client plugin', async () => {
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
   const compatibility = JSON.parse(await readFile(new URL('compatibility.json', root), 'utf8'))
   assert.equal(pkg.name, 'dsh-image-viewer')
-  assert.match(pkg.version, /^\d+\.\d+\.\d+-(?:beta|rc)\.\d+$/u)
-  assert.equal(pkg.publishConfig.tag, pkg.version.includes('-rc.') ? 'next' : 'beta')
+  assert.match(pkg.version, /^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/u)
+  assert.equal(pkg.version, '0.1.0')
+  assert.equal(pkg.publishConfig.tag, 'latest')
   assert.equal(compatibility.latestTested, '0.1.2-rc.1')
   assert.ok(compatibility.supported.includes('0.1.2-rc.1'))
   assert.equal(pkg.dsh.client.platform, 'web')
@@ -110,7 +111,7 @@ test('issue intake defaults to concise English forms without title prefixes', as
   assert.match(forms[0], /Plugin version[\s\S]*DSH version/u)
 })
 
-test('release is gated by checks, an immutable draft, and the recommended npm tag', async () => {
+test('release is gated by checks, an immutable draft, and version-appropriate channels', async () => {
   const [ci, publish] = await Promise.all([
     readFile(new URL('.github/workflows/ci.yml', root), 'utf8'),
     readFile(new URL('.github/workflows/publish.yml', root), 'utf8'),
@@ -121,21 +122,24 @@ test('release is gated by checks, an immutable draft, and the recommended npm ta
   assert.match(ci, /accept-official-release\.ps1/u)
   assert.match(publish, /needs: official-dsh-acceptance/u)
   assert.match(publish, /--draft --prerelease/u)
+  assert.match(publish, /--draft --latest/u)
   assert.match(publish, /--title "\$TAG"/u)
   assert.match(publish, /npm view "dsh-image-viewer@\$version" dist\.tarball/u)
   assert.match(publish, /diff -qr --strip-trailing-cr --exclude='\*\.map'/u)
   assert.match(publish, /cp "\$RUNNER_TEMP\/npm\.tgz" \.release\/dsh-image-viewer\.tgz/u)
-  assert.match(publish, /npm publish \.release\/dsh-image-viewer\.tgz --access public --tag beta/u)
+  assert.match(publish, /npm publish \.release\/dsh-image-viewer\.tgz --access public --tag "\$npm_tag"/u)
   assert.match(publish, /fetch-depth: 0/u)
   assert.match(publish, /git describe --tags --abbrev=0 --match 'v\[0-9\]\*' HEAD\^/u)
   assert.match(publish, /No release-bearing plugin change since \$previous_tag/u)
   assert.match(publish, /jq '\{name,main,exports,files,dsh,engines,dependencies,optionalDependencies,peerDependencies,peerDependenciesMeta\}'/u)
   assert.match(publish, /release_files=.*package\.json/u)
   assert.match(publish, /latest_before=.*npm view dsh-image-viewer dist-tags\.latest/u)
-  assert.match(publish, /beta_after=.*npm view dsh-image-viewer dist-tags\.beta/u)
-  assert.match(publish, /if \[\[ "\$beta_after" != "\$version" \|\| "\$latest_after" != "\$latest_before" \]\]; then[\s\S]*?exit 1/u)
+  assert.match(publish, /tag_after=.*npm view dsh-image-viewer "dist-tags\.\$npm_tag"/u)
+  assert.match(publish, /expected_latest="\$version"[\s\S]*?expected_latest="\$latest_before"/u)
+  assert.match(publish, /if \[\[ "\$tag_after" != "\$version" \|\| "\$latest_after" != "\$expected_latest" \]\]; then[\s\S]*?exit 1/u)
   assert.ok(publish.indexOf('Publish or reconcile with npm') < publish.indexOf('Create verified draft release'))
   assert.match(publish, /--draft=false --prerelease/u)
+  assert.match(publish, /--draft=false --latest/u)
   assert.match(publish, /dsh plugin --profile web add dsh-image-viewer/u)
   assert.doesNotMatch(publish, /\birm\b|install\.ps1/iu)
   assert.match(publish, /contributor_prs:[\s\S]*merged contributor PR numbers/u)
