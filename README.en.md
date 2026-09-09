@@ -30,6 +30,7 @@ Release checks exercise real attachments on stable and current Alpha DSH: galler
 
 - Wheel zoom centered on the pointer, drag-to-pan, touch pinch, and double-click 100% view.
 - Fit and original-size controls, original-file download, keyboard navigation, and multi-image galleries.
+- Upcoming 0.1.1: download progress when the file size is available, cancellation and retry; switching images or closing the viewer cancels the active download.
 - Visible filename, dimensions and pixel-scale percentage; very wide images can reach 100%, and window resizing keeps the image within reach.
 - Loading and retryable error states, gesture reset on image changes, and independent notes for unnamed images.
 - One-shot region marking with each note edited beside its numbered image marker. Enter saves and collapses the note;
@@ -60,6 +61,12 @@ dsh plugin --profile web remove dsh-image-viewer
 ```
 
 Uninstalling restores DSH's built-in image lightbox. It does not remove conversations, attachments, generated images, provider plugins, or credentials.
+
+## Custom download integration
+
+When calling `nativeImageViewer.open()`, an item's `download.onInvoke` receives `{ item, src, signal, onProgress }`. Pass `signal` to the download request and report bytes through `onProgress({ loaded, total })`. Omit `total` when the size is unknown; the viewer shows a preparing state and a cancel button.
+
+Existing callbacks remain compatible. Custom transfers must honor `signal` to stop their underlying work. The viewer ignores late progress and results from cancelled operations. Download authorization and original-file integrity checks remain the image provider's responsibility.
 
 ## Privacy
 
