@@ -1,6 +1,6 @@
 {
   "name": "dsh-image-viewer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Zoom, pan, download, gallery, and region-note image viewer for DeepSeek Harness",
   "keywords": [
     "dsh-plugin",
@@ -48,7 +48,7 @@
   },
   "scripts": {
     "build": "tsdown --config tsdown.config.mjs",
-    "test:behavior": "node --test tests/viewer.test.mjs",
+    "test:behavior": "node --test tests/viewer.test.mjs tests/image-download.test.mjs",
     "test:delivery": "node --test tests/package-contract.test.mjs",
     "test": "node --test tests/*.test.mjs",
     "check": "pnpm run test && pnpm run build && pnpm pack --pack-destination .artifacts"

@@ -490,16 +490,27 @@ try {
   await close()
 
   await evaluatePage(function initializeCallbackState() {
-    window.__viewerState = { downloadPendingCalls: 0, downloadRetryCalls: 0, actionRetryCalls: 0, oldActionCalls: 0 }
+    window.__viewerState = {
+      downloadPendingCalls: 0,
+      downloadRetryCalls: 0,
+      actionRetryCalls: 0,
+      oldActionCalls: 0,
+      downloadOperations: [],
+    }
   })
   await registerPageCallbacks({
     oldActionPending: async () => {
       window.__viewerState.oldActionCalls += 1
       await new Promise(resolve => { window.__viewerState.resolveOldAction = resolve })
     },
-    downloadPending: async () => {
+    downloadPending: async ({ signal, onProgress }) => {
       window.__viewerState.downloadPendingCalls += 1
-      await new Promise(resolve => { window.__viewerState.resolveDownload = resolve })
+      const operation = { signal, onProgress }
+      await new Promise((resolve, reject) => {
+        Object.assign(operation, { resolve, reject })
+        window.__viewerState.resolveDownload = resolve
+        window.__viewerState.downloadOperations.push(operation)
+      })
     },
     downloadFailRetry: async () => {
       window.__viewerState.downloadRetryCalls += 1
@@ -536,16 +547,84 @@ try {
   await open([{ id: 'custom-pending', src: normal, name: 'Custom pending controls', download: { pendingLabel: 'Preparing custom', errorLabel: 'Retry custom download', callback: 'downloadPending' }, actions: [{ id: 'pending-action', label: 'Process custom', pendingLabel: 'Processing custom', errorLabel: 'Retry custom action', callback: 'oldActionPending' }] }])
   await waitReady()
   const pendingDownload = page.locator('.niv-download')
+  const firstDownloadOperation = await page.evaluate(() => window.__viewerState.downloadOperations.length)
   await pendingDownload.click()
-  await page.waitForFunction(() => document.querySelector('.niv-download')?.disabled === true && document.querySelector('.niv-download')?.textContent.includes('Preparing custom'))
-  await page.evaluate(() => window.__viewerState.resolveDownload?.())
+  await page.waitForFunction(index => window.__viewerState.downloadOperations.length === index + 1, firstDownloadOperation)
+  await page.waitForFunction(() => {
+    const button = document.querySelector('.niv-download')
+    return button?.disabled === false && button.getAttribute('aria-label') === 'Cancel download'
+      && button.textContent.includes('Preparing custom') && button.textContent.includes('Cancel')
+  })
+  await page.evaluate(index => window.__viewerState.downloadOperations[index].onProgress({ loaded: 50, total: 100 }), firstDownloadOperation)
+  await page.waitForFunction(() => document.querySelector('.niv-download')?.textContent.includes('50%'))
+  await pendingDownload.click()
+  await page.waitForFunction(() => document.querySelector('.niv-download')?.getAttribute('aria-label') === 'Download' && document.querySelector('.niv-download')?.textContent.includes('Download'))
+  await page.waitForFunction(index => window.__viewerState.downloadOperations[index].signal.aborted === true, firstDownloadOperation)
+
+  const retryDownloadOperation = await page.evaluate(() => window.__viewerState.downloadOperations.length)
+  await pendingDownload.click()
+  await page.waitForFunction(index => window.__viewerState.downloadOperations.length === index + 1, retryDownloadOperation)
+  await page.waitForFunction(() => document.querySelector('.niv-download')?.getAttribute('aria-label') === 'Cancel download')
+  await page.evaluate(({ oldIndex, nextIndex }) => {
+    const oldOperation = window.__viewerState.downloadOperations[oldIndex]
+    oldOperation.onProgress({ loaded: 99, total: 100 })
+    oldOperation.reject(new Error('late old download failure'))
+    window.__viewerState.downloadOperations[nextIndex].onProgress({ loaded: 50, total: 100 })
+  }, { oldIndex: firstDownloadOperation, nextIndex: retryDownloadOperation })
+  await page.waitForFunction(() => {
+    const button = document.querySelector('.niv-download')
+    const text = button?.textContent ?? ''
+    return button?.getAttribute('aria-label') === 'Cancel download' && text.includes('50%') && !text.includes('99%')
+  })
+  await page.evaluate(index => window.__viewerState.downloadOperations[index].resolve(), retryDownloadOperation)
   await page.waitForFunction(() => document.querySelector('.niv-download')?.disabled === false && document.querySelector('.niv-download')?.textContent.includes('Download'))
   const pendingAction = page.getByRole('button', { name: 'Process custom', exact: true })
   await pendingAction.click()
   await page.waitForFunction(() => [...document.querySelectorAll('.niv-button')].some(button => button.disabled && button.textContent.includes('Processing custom')))
   await page.evaluate(() => window.__viewerState.resolveOldAction?.())
   await page.waitForFunction(() => [...document.querySelectorAll('.niv-button')].some(button => !button.disabled && button.textContent.includes('Process custom')))
-  checks.push('custom download and action pending disable')
+  checks.push('custom download progress cancel retry ignores stale callbacks')
+  checks.push('custom action pending remains disabled')
+  await close()
+
+  const cancellationItems = [
+    { id: 'cancel-first', src: normal, name: 'Cancel first', download: { callback: 'downloadPending' } },
+    { id: 'cancel-second', src: normalTwo, name: 'Cancel second', download: { callback: 'downloadPending' } },
+  ]
+  await open(cancellationItems)
+  await waitReady()
+  const switchDownloadOperation = await page.evaluate(() => window.__viewerState.downloadOperations.length)
+  await page.locator('.niv-download').click()
+  await page.waitForFunction(index => window.__viewerState.downloadOperations.length === index + 1, switchDownloadOperation)
+  await page.getByRole('button', { name: 'Next image', exact: true }).click()
+  await waitImageAlt('Cancel second')
+  await waitReady()
+  await page.waitForFunction(index => window.__viewerState.downloadOperations[index].signal.aborted === true, switchDownloadOperation)
+  const closeDownloadOperation = await page.evaluate(() => window.__viewerState.downloadOperations.length)
+  await page.locator('.niv-download').click()
+  await page.waitForFunction(index => window.__viewerState.downloadOperations.length === index + 1, closeDownloadOperation)
+  await close()
+  await page.waitForFunction(index => window.__viewerState.downloadOperations[index].signal.aborted === true, closeDownloadOperation)
+  checks.push('download aborts on image switch and viewer close')
+
+  await open([{ id: 'invalid-progress', src: normal, name: 'Invalid progress', download: { callback: 'downloadPending' } }])
+  await waitReady()
+  const invalidDownloadOperation = await page.evaluate(() => window.__viewerState.downloadOperations.length)
+  await page.locator('.niv-download').click()
+  await page.waitForFunction(index => window.__viewerState.downloadOperations.length === index + 1, invalidDownloadOperation)
+  await page.evaluate(index => {
+    const operation = window.__viewerState.downloadOperations[index]
+    operation.onProgress({ loaded: 1, total: 0 })
+    operation.onProgress({ loaded: 1, total: Number.NaN })
+    operation.onProgress({ loaded: 1 })
+  }, invalidDownloadOperation)
+  await page.waitForFunction(() => {
+    const text = document.querySelector('.niv-download')?.textContent ?? ''
+    return /Preparing…|Preparing custom/u.test(text) && !/NaN|Infinity/u.test(text)
+  })
+  await page.locator('.niv-download').click()
+  await page.waitForFunction(() => document.querySelector('.niv-download')?.getAttribute('aria-label') === 'Download')
+  checks.push('invalid and unknown download totals stay indeterminate')
   await close()
 
   await open([{ id: 'download-retry', src: normal, name: 'Download retry', download: { errorLabel: 'Retry custom download', callback: 'downloadFailRetry' } }])

@@ -72,6 +72,7 @@ try {
   await viewer.getByRole('button', { name: /^(Mark region|标记区域)$/ }).click()
   await viewer.locator('.niv-image').click()
   await viewer.locator('textarea').fill('Synthetic acceptance note')
+  await page.screenshot({ path: join(evidence, 'official-viewer-annotation.png') })
   await viewer.getByRole('button', { name: /^(Remove region note|删除区域备注)$/ }).click()
   assert.equal(await viewer.locator('.niv-annotation').count(), 0)
   const downloaded = page.waitForEvent('download')
