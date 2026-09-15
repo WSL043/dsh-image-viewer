@@ -21,7 +21,7 @@ jobs:
       official: ${{ steps.plan.outputs.official }}
       dsh_versions: ${{ steps.versions.outputs.dsh_versions }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v6
         with: { node-version: 24, package-manager-cache: false }
@@ -40,7 +40,7 @@ jobs:
     if: needs.plan.outputs.behavior == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v5
         with: { version: 11.19.0, run_install: false }
       - uses: actions/setup-node@v6
@@ -71,7 +71,7 @@ jobs:
     if: needs.plan.outputs.delivery == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v5
         with: { version: 11.19.0, run_install: false }
       - uses: actions/setup-node@v6
@@ -89,7 +89,7 @@ jobs:
     if: needs.plan.outputs.official == 'true' && needs.behavior.result == 'success'
     runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v5
         with: { version: 11.19.0, run_install: false }
       - uses: actions/setup-node@v6
