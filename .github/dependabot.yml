@@ -19,6 +19,12 @@ updates:
       - dependency-name: "react"
       - dependency-name: "react-dom"
       - dependency-name: "tsdown"
+    # React must remain compatible with the DSH host major version.
+    ignore:
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
     groups:
       tooling:
         update-types: [minor, patch]
