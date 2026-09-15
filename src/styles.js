@@ -1,4 +1,5 @@
 export const CSS = String.raw`
+.niv-draft-status{position:absolute;top:76px;left:50%;transform:translateX(-50%);z-index:10;max-width:calc(100% - 48px);padding:10px 16px;border-radius:12px;background:#26272a;color:#fff;font-size:13px;line-height:20px}
 .niv-root{position:fixed;inset:0;z-index:1000;pointer-events:auto;overflow:hidden;background:rgba(7,8,10,.68);color:var(--dsw-alias-label-primary-inverted,#fff);outline:0;backdrop-filter:blur(13px) saturate(.72);-webkit-backdrop-filter:blur(13px) saturate(.72)}
 .niv-sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 .niv-title{position:absolute;top:20px;left:24px;right:84px;display:flex;align-items:baseline;gap:12px;color:#fff;font-size:13px}.niv-title strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.niv-title small{flex:none;opacity:.7}.niv-load-status{position:absolute;z-index:7;display:flex;align-items:center;gap:12px;color:#fff;font-size:14px}

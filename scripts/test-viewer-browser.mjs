@@ -747,6 +747,38 @@ try {
   assert.equal(deniedCorsFetches, 2)
   checks.push('cross-origin HTTP CORS failure is retryable without navigation')
   await close()
+  await page.evaluate(() => {
+    const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480
+    const paint = canvas.getContext('2d'); paint.fillStyle = '#777'; paint.fillRect(0, 0, 640, 480)
+    const button = document.createElement('button'); button.id = 'annotation-intake'; button.dataset.variant = 'single'
+    const img = document.createElement('img'); img.src = canvas.toDataURL(); img.alt = 'draft-source.png'; img.style.width = '100px'; button.append(img)
+    document.body.append(button)
+    window.__draftEvidence = { text: 'Existing draft', files: [], ids: [] }
+    const state = window.__draftEvidence
+    const input = { state: { getSnapshot: () => ({ phase: 'plain', draft: state.text }) }, setDraft: text => { state.text = text }, addAttachments: ids => { state.ids = ids; return true } }
+    const conversation = { input: { for: () => input }, createDrafts: (_session, files) => { state.files = files; return files.map((_, i) => ({ id: `attachment-${i}` })) }, releaseDraftAttachments: () => {} }
+    const sessions = { list: { getSnapshot: () => ({ current: 'fixture' }) }, scope: id => id }
+    window.__viewerContext.get = key => key === 'sessions' ? sessions : conversation
+  })
+  await page.locator('#annotation-intake').click()
+  await waitReady()
+  await page.getByRole('button', { name: 'Mark region', exact: true }).click()
+  await page.locator('.niv-image').click({ position: { x: 180, y: 150 } })
+  await page.locator('.niv-inline-note textarea').fill('Make this area brighter')
+  await page.locator('.niv-close-floating').click()
+  await page.locator('.niv-root').waitFor({ state: 'hidden' })
+  const draftEvidence = await page.evaluate(async () => {
+    const { text, files, ids } = window.__draftEvidence
+    const image = await createImageBitmap(files[0])
+    const result = { text, ids, name: files[0].name, type: files[0].type, width: image.width, height: image.height }
+    image.close(); return result
+  })
+  assert.match(draftEvidence.text, /^Existing draft\n\n/)
+  assert.match(draftEvidence.text, /Make this area brighter/)
+  assert.equal(draftEvidence.type, 'image/png')
+  assert.deepEqual([draftEvidence.width, draftEvidence.height], [640, 480])
+  assert.equal(draftEvidence.ids.length, 1)
+  checks.push('native image click, annotation, close, rendered PNG and notes enter existing draft without send')
   assert.deepEqual(pageErrors, [])
   const result = { ok: true, checks }
   await writeFile(join(evidence, 'viewer-browser-result.json'), `${JSON.stringify(result)}\n`, 'utf8')
