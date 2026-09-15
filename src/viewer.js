@@ -39,6 +39,7 @@ export function normalizeViewerRequest(request) {
     opener: typeof HTMLElement !== 'undefined' && request?.opener instanceof HTMLElement ? request.opener : undefined,
     source: typeof request?.source === 'string' ? request.source : 'dsh',
     annotations: request?.annotations !== false,
+    commitAnnotations: typeof request?.commitAnnotations === 'function' ? request.commitAnnotations : undefined,
   }
 }
 
@@ -47,6 +48,8 @@ export class NativeImageViewerService {
   #revision = 0
   #snapshot
   #annotationsByImage = new Map()
+  #openingAnnotations = new Map()
+  #closing = false
 
   constructor() {
     this.subscribe = listener => {
@@ -66,16 +69,34 @@ export class NativeImageViewerService {
   }
 
   open(request) {
+    if (this.#closing) return false
     const normalized = normalizeViewerRequest(request)
     if (normalized === undefined) return false
     this.#revision += 1
     this.#snapshot = { ...normalized, revision: this.#revision }
+    this.#openingAnnotations = new Map(normalized.items.map(item => [item.id, JSON.stringify(this.#annotationsByImage.get(item.id) || [])]))
     this.#emit()
     return true
   }
 
-  close() {
+  async close({ discard = false } = {}) {
     if (this.#snapshot === undefined) return
+    if (this.#closing) return
+    const pending = this.#snapshot.items.map(item => ({ item, annotations: this.#annotationsByImage.get(item.id) || [] }))
+      .filter(({ item, annotations }) => annotations.some(note => note.note.trim()) && JSON.stringify(annotations) !== this.#openingAnnotations.get(item.id))
+    if (!discard && pending.length && this.#snapshot.commitAnnotations) {
+      this.#closing = true
+      this.#snapshot = { ...this.#snapshot, committing: true, commitError: false }
+      this.#emit()
+      try { await this.#snapshot.commitAnnotations(pending) }
+      catch {
+        this.#snapshot = { ...this.#snapshot, committing: false, commitError: true }
+        this.#closing = false
+        this.#emit()
+        return false
+      }
+      this.#closing = false
+    }
     const opener = this.#snapshot.opener
     this.#snapshot = undefined
     this.#emit()

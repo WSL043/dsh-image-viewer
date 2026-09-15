@@ -11,12 +11,14 @@ import {
 import { CSS as VIEWER_CSS } from './styles.js'
 import { useImageTransform } from './image-transform.js'
 import { downloadPercent, readImageBlob } from './image-download.js'
+import { createAnnotationCommit } from './annotation-draft.js'
 
 export const name = 'dsh-image-viewer'
 export const inject = ['locale', 'slots']
 
 const LOCALES = {
   en: {
+    addingDraft: 'Adding image and notes to draft…', draftFailed: 'Could not add to draft. Return to the original session and keep the composer editable, then close to retry.', closeWithoutDraft: 'Close without adding',
     dialog: 'Image viewer', close: 'Close', fit: 'Fit', actual: '100%', download: 'Download',
     annotate: 'Mark region', cancelAnnotate: 'Cancel marking', regions: 'Region notes', regionHint: 'Click a point on the image, then add a note.',
     note: 'Region {value}', notePlaceholder: 'Describe what should change here…', removeNote: 'Remove region note',
@@ -25,6 +27,7 @@ const LOCALES = {
     cancelDownload: 'Cancel download', cancel: 'Cancel', loading: 'Loading image…', loadFailed: 'Image could not be loaded.', retry: 'Retry', copyFailed: 'Copy failed. Try again.',
   },
   zh: {
+    addingDraft: '正在把图片和备注加入草稿…', draftFailed: '未能加入草稿。请回到原会话并确保输入框可编辑，再关闭以重试。', closeWithoutDraft: '仅关闭，不加入草稿',
     dialog: '图片查看器', close: '关闭', fit: '适应窗口', actual: '原始大小', download: '下载',
     annotate: '标记区域', cancelAnnotate: '取消标记', regions: '区域备注', regionHint: '点击图片中的位置，然后填写备注。',
     note: '区域 {value}', notePlaceholder: '描述这里需要怎样调整…', removeNote: '删除区域备注',
@@ -146,6 +149,7 @@ function ViewerOverlay({ service, t }) {
   const { transform, transformRef, dragging, pixelScale, geometry, stageRef, surfaceRef, imageRef, fit, actual, measure, setZoomAt, resetGesture, pointerHandlers } = useImageTransform(`${request?.revision}:${item?.id}:${item?.src}`)
   const annotations = item === undefined ? [] : annotationsByImage[item.id] ?? []
   const setAnnotations = useCallback((update) => {
+    if (service.getSnapshot()?.committing) return
     if (item === undefined) return
     const previous = annotationsByImageRef.current[item.id] ?? []
     const next = typeof update === 'function' ? update(previous) : update
@@ -163,6 +167,7 @@ function ViewerOverlay({ service, t }) {
     document.body.style.overflow = 'hidden'
     rootRef.current?.focus()
     const onKeyDown = event => {
+      if (service.getSnapshot()?.committing) { event.preventDefault(); event.stopPropagation(); return }
       if (event.defaultPrevented || event.isComposing) return
       if (event.key === 'Escape') {
         event.preventDefault()
@@ -259,6 +264,7 @@ function ViewerOverlay({ service, t }) {
     }
   }
   return <div ref={rootRef} className="niv-root" role="dialog" aria-modal="true" aria-label={t('dialog')} tabIndex={-1}>
+    {request.committing || request.commitError ? <div className="niv-draft-status" role="status">{t(request.committing ? 'addingDraft' : 'draftFailed')}{request.commitError ? <button className="niv-button" type="button" onClick={() => { void service.close({ discard: true }) }}>{t('closeWithoutDraft')}</button> : null}</div> : null}
     <div className="niv-title"><strong>{item.name}</strong>{meta !== '' ? <small>{meta}</small> : null}</div>
     <header className="niv-topbar" role="toolbar" aria-label={t('dialog')}>
       <div className="niv-actions">
@@ -307,7 +313,7 @@ function ViewerOverlay({ service, t }) {
   </div>
 }
 
-function installOfficialImageBridge(service) {
+function installOfficialImageBridge(service, ctx, t) {
   const onClick = event => {
     const match = nativeImageButton(event.target)
     if (match === undefined) return
@@ -315,7 +321,11 @@ function installOfficialImageBridge(service) {
     event.preventDefault()
     event.stopPropagation()
     event.stopImmediatePropagation()
-    service.open({ items, index, opener: match.button, source: 'dsh-native', annotations: true })
+    const commitAnnotations = createAnnotationCommit(ctx, {
+      readBlob: src => readImageBlob(src, { signal: new AbortController().signal, onProgress: () => {} }),
+      formatNotes: annotations => noteText(annotations, t),
+    })
+    service.open({ items, index, opener: match.button, source: 'dsh-native', annotations: true, commitAnnotations })
   }
   document.addEventListener('click', onClick, true)
   return () => { document.removeEventListener('click', onClick, true) }
@@ -324,6 +334,7 @@ function installOfficialImageBridge(service) {
 export function apply(ctx) {
   const service = new NativeImageViewerService()
   ctx.effect(() => ctx.locale.register(name, LOCALES), `${name}: dictionaries`)
+  const t = ctx.locale.bind(name)
   ctx.effect(() => {
     const style = document.createElement('style')
     style.dataset.plugin = name
@@ -333,10 +344,9 @@ export function apply(ctx) {
   }, `${name}: styles`)
   ctx.effect(() => {
     const disposeService = ctx.reflect.provide('nativeImageViewer', service)
-    const disposeBridge = installOfficialImageBridge(service)
+    const disposeBridge = installOfficialImageBridge(service, ctx, t)
     return () => { disposeBridge(); void disposeService() }
   }, `${name}: optional viewer service and native image bridge`)
-  const t = ctx.locale.bind(name)
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay', id: name, order: 20, inject: () => ({ service, t }),
   }, ViewerOverlay))

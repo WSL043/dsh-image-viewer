@@ -35,6 +35,7 @@ Release checks exercise real attachments on stable and current Alpha DSH: galler
 - Upcoming 0.1.1: download progress when the file size is available, cancellation and retry; switching images or closing the viewer cancels the active download.
 - Visible filename, dimensions and pixel-scale percentage; very wide images can reach 100%, and window resizing keeps the image within reach.
 - Loading and retryable error states, gesture reset on image changes, and independent notes for unnamed images.
+- Upcoming 0.1.1: closing an annotated native DSH image adds a numbered PNG and notes to the originating conversation draft, preserving existing text without sending. Unchanged notes are not added twice. Failed intake preserves notes with retry and close-only choices.
 - One-shot region marking with each note edited beside its numbered image marker. Enter saves and collapses the note;
   Shift+Enter adds a new line.
 - Light and dark themes through DSH design tokens, responsive layout, focus containment, and reduced-motion support.
@@ -72,7 +73,7 @@ Existing callbacks remain compatible. Custom transfers must honor `signal` to st
 
 ## Privacy
 
-Image bytes stay in the current browser profile. The plugin reads only URLs already rendered by DSH, does not upload images, does not call a model, and does not read provider credentials. Region notes remain available when the same image is reopened during the current DSH page session, but are not written to conversation storage unless another plugin explicitly uses them for a user-requested action.
+The plugin reads only URLs already rendered by DSH, does not call a model, and does not read provider credentials. The upcoming annotation workflow adds images and notes through DSH's attachment and draft APIs; the user decides whether to send. Notes remain available when reopening an image within the current page, which does not imply a sent message or permanent conversation storage.
 
 ## Support
 
