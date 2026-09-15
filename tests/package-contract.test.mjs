@@ -25,7 +25,7 @@ test('declares one optional web client plugin', async () => {
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
   assert.ok(pkg.files.includes('compatibility.json'))
   const range = [...compatibility.supported, ...compatibility.previews].join(' || ')
-  assert.deepEqual(compatibility.previews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1'])
+  assert.deepEqual(compatibility.previews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1', '0.1.6-alpha.1'])
   for (const [name, version] of Object.entries(pkg.peerDependencies)) {
     if (name.startsWith('@deepseek-ai/dsh-')) assert.equal(version, range, name)
   }
