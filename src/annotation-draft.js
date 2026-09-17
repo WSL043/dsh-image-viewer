@@ -28,6 +28,17 @@ export async function renderAnnotationImage(blob, annotations) {
   } finally { image.close() }
 }
 
+const hasOwn = Object.prototype.hasOwnProperty
+
+// Legacy hosts expose the selected session as `list.current`. Alpha2 keeps
+// that selection in the UI session retention projection instead, where the
+// main view is the only owner allowed to retain the current session.
+export function currentSessionId(snapshot) {
+  if (snapshot !== null && typeof snapshot === 'object' && hasOwn.call(snapshot, 'current')) return snapshot.current
+  const retained = Object.entries(snapshot?.byId ?? {}).filter(([, entry]) => (entry?.retainedBy?.mainView ?? 0) > 0)
+  return retained.length === 1 ? retained[0][0] : undefined
+}
+
 // Capture the destination when the viewer opens, then validate it again after
 // asynchronous image preparation. Never send or redirect another session.
 export function createAnnotationCommit(ctx, { readBlob, render = renderAnnotationImage, formatNotes }) {
@@ -35,16 +46,16 @@ export function createAnnotationCommit(ctx, { readBlob, render = renderAnnotatio
   try {
     sessions = ctx.get('sessions')
     conversation = ctx.get('conversation')
-    sessionId = sessions.list.getSnapshot().current
+    sessionId = currentSessionId(sessions.list.getSnapshot())
   } catch { /* The viewer also works without a conversation host. */ }
   return async entries => {
-    if (!sessionId || !conversation?.input?.for || sessions.list.getSnapshot().current !== sessionId) throw new Error('Composer unavailable or session changed')
+    if (!sessionId || !conversation?.input?.for || currentSessionId(sessions.list.getSnapshot()) !== sessionId) throw new Error('Composer unavailable or session changed')
     const prepared = await Promise.all(entries.map(async ({ item, annotations }) => {
       const image = await render(await readBlob(item.src), annotations)
       const name = `${String(item.name || 'image').replace(/\.[^.]+$/, '')}-annotated.png`
       return { file: new File([image], name, { type: 'image/png' }), text: `${name}\n${formatNotes(annotations)}` }
     }))
-    if (sessions.list.getSnapshot().current !== sessionId) throw new Error('Session changed')
+    if (currentSessionId(sessions.list.getSnapshot()) !== sessionId) throw new Error('Session changed')
     const input = conversation.input.for(sessions.scope(sessionId))
     const state = input.state.getSnapshot()
     if (state.phase !== 'plain' || state.occurrences?.length) throw new Error('Composer busy or contains references')
