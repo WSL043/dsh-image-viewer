@@ -5,7 +5,7 @@ import { chromium } from 'playwright'
 
 const [url, evidence] = process.argv.slice(2)
 await mkdir(evidence, { recursive: true })
-const browser = await chromium.launch({ headless: true })
+const browser = await chromium.launch({ headless: true, channel: process.env.DSH_TEST_BROWSER_CHANNEL || undefined })
 const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
 const errors = []
 page.on('pageerror', error => errors.push(error.message))
@@ -22,7 +22,8 @@ try {
     })
   }
   const session = page.locator('[role="treeitem"]').filter({ has: page.locator('button[aria-label^="Session actions for "],button[aria-label^="会话“"]') }).first()
-  await session.click()
+  // Newer DSH can already select a blank workspace session without a row menu.
+  if (await session.count()) await session.click()
   const fixtures = await page.evaluate(() => ['#2377aa', '#aa5523'].map(color => {
     const canvas = document.createElement('canvas')
     canvas.width = 640
@@ -40,6 +41,7 @@ try {
     return data
   }, fixtures)
   const input = page.locator('[contenteditable="true"][role="textbox"]')
+  await input.fill('Existing acceptance draft')
   await input.click()
   await input.evaluate((element, clipboardData) => element.dispatchEvent(new ClipboardEvent('paste', {
     bubbles: true, cancelable: true, clipboardData,
@@ -82,8 +84,23 @@ try {
   await page.keyboard.press('Escape')
   await viewer.waitFor({ state: 'hidden' })
   await page.waitForFunction(() => document.activeElement?.matches('[role="group"] button[title], [role="group"] button[title] *'))
+  // Keep this in the actual DSH acceptance: drawing alone did not exercise
+  // the host's current-session or attachment APIs.
+  await thumbnails.nth(1).click()
+  await viewer.waitFor()
+  await viewer.getByRole('button', { name: /^(Mark region|标记区域)$/ }).click()
+  await viewer.locator('.niv-image').click()
+  await viewer.locator('textarea').fill('Annotation returned to the original draft')
+  await viewer.locator('.niv-close-floating').click()
+  await viewer.waitFor({ state: 'hidden' })
+  await thumbnails.nth(2).waitFor()
+  assert.equal(await thumbnails.count(), 3, 'marked image is appended to the composer')
+  const draft = await input.innerText()
+  assert.ok(draft.includes('Existing acceptance draft'), 'existing draft is preserved')
+  assert.ok(draft.includes('Annotation returned to the original draft'), 'notes return to the composer')
+  await page.screenshot({ path: join(evidence, 'official-viewer-annotation-draft.png') })
   assert.deepEqual(errors, [])
-  console.log(JSON.stringify({ ok: true, checks: ['official composer attachments', 'gallery index and navigation', 'zoom', 'pan', 'region note add/remove', 'download', 'escape and focus', 'no page errors'] }))
+  console.log(JSON.stringify({ ok: true, checks: ['official composer attachments', 'gallery index and navigation', 'zoom', 'pan', 'region note add/remove', 'download', 'escape and focus', 'annotation image and notes returned to draft', 'no page errors'] }))
 } catch (error) {
   await page.screenshot({ path: join(evidence, 'browser-failure.png') }).catch(() => {})
   await writeFile(join(evidence, 'browser-failure.html'), await page.content())
