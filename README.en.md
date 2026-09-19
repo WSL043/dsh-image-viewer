@@ -45,6 +45,8 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 
 ## Install
 
+For DSH 0.1.6-alpha.2, use `dsh-image-viewer@0.1.2-beta.1`. In **Plugins → Add plugin**, enter only that package name and version, not a terminal command. Follow the installation result for refresh/restart. The 0.1.0 commands below target previously supported cores, not every newer Alpha.
+
 Install the stable release from npm:
 
 ```sh
