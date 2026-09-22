@@ -1,10 +1,17 @@
 import {
   useCallback, useEffect, useRef, useState, useSyncExternalStore,
 } from 'react'
-import {
-  IconChevronLeftOutline14, IconChevronRightOutline14, IconCloseOutline16,
-  IconCopyOutline16, IconDownloadOutline16, IconEditOutline16, IconFullscreenOutline16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+import * as primitives from '@deepseek-ai/dsh-client-ui-primitives'
+
+// Official 0.1.7 renamed sized icon exports; resolve from the running host,
+// retaining older verified cores without copying its icon implementation.
+const IconChevronLeftOutline14 = primitives.IconChevronLeftOutlineRegular ?? primitives.IconChevronLeftOutline14
+const IconChevronRightOutline14 = primitives.IconChevronRightOutlineRegular ?? primitives.IconChevronRightOutline14
+const IconCloseOutline16 = primitives.IconCloseOutlineRegular ?? primitives.IconCloseOutline16
+const IconCopyOutline16 = primitives.IconCopyOutlineRegular ?? primitives.IconCopyOutline16
+const IconDownloadOutline16 = primitives.IconDownloadOutlineRegular ?? primitives.IconDownloadOutline16
+const IconEditOutline16 = primitives.IconEditOutlineRegular ?? primitives.IconEditOutline16
+const IconFullscreenOutline16 = primitives.IconFullscreenOutlineRegular ?? primitives.IconFullscreenOutline16
 import {
   imageItemsForButton, NativeImageViewerService, nativeImageButton,
 } from './viewer.js'
