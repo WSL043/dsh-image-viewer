@@ -50,19 +50,19 @@
 2. 在“包名或地址”中粘贴下面这一行，再点击安装：
 
 ```text
-dsh-image-viewer@0.1.2-beta.1
+dsh-image-viewer@0.1.2-beta.2
 ```
 
 3. 查看安装结果；仅在页面要求时刷新或重启。安装失败时留在插件页查看错误，不必重复安装。
 
-**此版本已验证 DSH 0.1.6-alpha.2。0.1.7-alpha.1 的适配仍在验收，尚未发布。** 不要把整条 `dsh plugin ...` 命令粘贴进包名框，也不要把仓库的 `main` 分支当作已验证发布包。
+**此版本兼容 DSH 0.1.6-alpha.2 和 0.1.7-alpha.1。** 不要把整条 `dsh plugin ...` 命令粘贴进包名框，也不要把仓库的 `main` 分支当作已验证发布包。
 
 ### 终端安装（可选）
 
 在 DSH 或 Portable 的终端中执行：
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.2-beta.1
+dsh plugin --profile web add dsh-image-viewer@0.1.2-beta.2
 ```
 
 如果 DSH 正在运行，命令完成后保存工作并重新启动，以加载终端改动。旧内核请选择对应发布说明中已验证的插件版本。
