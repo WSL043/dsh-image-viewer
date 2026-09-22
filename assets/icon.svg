@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="frame" x1="8" y1="9" x2="46" y2="51" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b6a0fc"/><stop offset="1" stop-color="#7561de"/>
+    </linearGradient>
+    <linearGradient id="mountain" x1="10" y1="30" x2="46" y2="50" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#dee0ff"/><stop offset="1" stop-color="#a6b5f8"/>
+    </linearGradient>
+    <linearGradient id="pen" x1="36" y1="50" x2="54" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#32b7d7"/><stop offset="1" stop-color="#7de5e9"/>
+    </linearGradient>
+  </defs>
+  <rect x="7" y="9" width="44" height="42" rx="8" fill="url(#frame)"/>
+  <circle cx="20" cy="22" r="4.5" fill="#f1eaff"/>
+  <path d="m7 40 12-10a3 3 0 0 1 4 0l8 7 7-6a3 3 0 0 1 4 0l9 8v4a8 8 0 0 1-8 8H15a8 8 0 0 1-8-8Z" fill="url(#mountain)"/>
+  <path d="m35 44 16-16a3 3 0 0 1 4 0l4 4a3 3 0 0 1 0 4L43 52l-11 3Z" fill="url(#pen)"/>
+  <path d="m35 44 8 8-11 3Z" fill="#d2f7f8"/>
+</svg>

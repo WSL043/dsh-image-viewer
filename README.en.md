@@ -51,7 +51,7 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 2. Paste this line into **Package name or address**, then select Install:
 
 ```text
-dsh-image-viewer@0.1.2-beta.2
+dsh-image-viewer@0.1.2
 ```
 
 3. Follow the result shown on the page. Refresh or restart only when requested. If installation fails, read its error before retrying.
@@ -63,7 +63,7 @@ dsh-image-viewer@0.1.2-beta.2
 Run in the DSH or Portable terminal:
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.2-beta.2
+dsh plugin --profile web add dsh-image-viewer@0.1.2
 ```
 
 If DSH is running, save your work and restart after this terminal operation to load the change. For older cores, choose the plugin version verified in its release notes.

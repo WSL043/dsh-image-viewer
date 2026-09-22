@@ -1,6 +1,6 @@
 {
   "name": "dsh-image-viewer",
-  "version": "0.1.2-beta.2",
+  "version": "0.1.2",
   "description": "Zoom, pan, download, gallery, and region-note image viewer for DeepSeek Harness",
   "keywords": [
     "dsh-plugin",
@@ -14,13 +14,17 @@
   "license": "MIT",
   "type": "module",
   "main": "./lib/index.js",
+  "icon": "./assets/icon.svg",
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*": "./locale/*"
   },
   "files": [
+    "assets/icon.svg",
+    "locale/*.json",
     "lib/*.js",
     "lib/*.map",
     "cordis.patch.yml",
