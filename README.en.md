@@ -45,21 +45,36 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 
 ## Install
 
-For DSH 0.1.6-alpha.2, use `dsh-image-viewer@0.1.2-beta.1`. In **Plugins → Add plugin**, enter only that package name and version, not a terminal command. Follow the installation result for refresh/restart. The 0.1.0 commands below target previously supported cores, not every newer Alpha.
+### Official plugin page (recommended)
 
-Install the stable release from npm:
+1. Open **Plugins → Add plugin** in DSH.
+2. Paste this line into **Package name or address**, then select Install:
 
-```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.0
+```text
+dsh-image-viewer@0.1.2-beta.1
 ```
 
-Restart DSH manually after saving active work. The plugin never needs access to provider credentials or image-generation accounts.
+3. Follow the result shown on the page. Refresh or restart only when requested. If installation fails, read its error before retrying.
+
+**This release is verified with DSH 0.1.6-alpha.2. Support for 0.1.7-alpha.1 is still undergoing acceptance and has not been published.** Do not paste a complete `dsh plugin ...` command into the package field or treat the repository's `main` branch as a qualified release package.
+
+### Terminal installation (optional)
+
+Run in the DSH or Portable terminal:
+
+```sh
+dsh plugin --profile web add dsh-image-viewer@0.1.2-beta.1
+```
+
+If DSH is running, save your work and restart after this terminal operation to load the change. For older cores, choose the plugin version verified in its release notes.
 
 ## Update
 
-Run the same version-pinned `dsh plugin ... add` command for the version you want to install.
+Use the installed plugin’s update action on the official **Plugins** page. If it is unavailable, use **Add plugin** with the published target `package@version`. Refresh or restart only when requested. The version-pinned terminal command above is an alternative.
 
 ## Uninstall
+
+Uninstall this plugin from the official **Plugins** page, or use the terminal:
 
 ```sh
 dsh plugin --profile web remove dsh-image-viewer
