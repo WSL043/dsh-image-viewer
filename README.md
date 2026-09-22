@@ -50,7 +50,7 @@
 2. 在“包名或地址”中粘贴下面这一行，再点击安装：
 
 ```text
-dsh-image-viewer@0.1.2-beta.2
+dsh-image-viewer@0.1.2
 ```
 
 3. 查看安装结果；仅在页面要求时刷新或重启。安装失败时留在插件页查看错误，不必重复安装。
@@ -62,7 +62,7 @@ dsh-image-viewer@0.1.2-beta.2
 在 DSH 或 Portable 的终端中执行：
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.2-beta.2
+dsh plugin --profile web add dsh-image-viewer@0.1.2
 ```
 
 如果 DSH 正在运行，命令完成后保存工作并重新启动，以加载终端改动。旧内核请选择对应发布说明中已验证的插件版本。
