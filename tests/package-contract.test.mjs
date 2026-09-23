@@ -16,8 +16,8 @@ test('declares one optional web client plugin', async () => {
   const compatibility = JSON.parse(await readFile(new URL('compatibility.json', root), 'utf8'))
   assert.equal(pkg.name, 'dsh-image-viewer')
   assert.match(pkg.version, /^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/u)
-  assert.equal(pkg.version, '0.1.2')
-  assert.equal(pkg.publishConfig.tag, 'latest')
+  assert.equal(pkg.version, '0.1.3-beta.0')
+  assert.equal(pkg.publishConfig.tag, 'next')
   assert.equal(compatibility.latestTested, '0.1.2-rc.1')
   assert.ok(compatibility.supported.includes('0.1.2-rc.1'))
   assert.equal(pkg.dsh.client.platform, 'web')
@@ -25,7 +25,8 @@ test('declares one optional web client plugin', async () => {
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
   assert.ok(pkg.files.includes('compatibility.json'))
   const range = [...compatibility.supported, ...compatibility.previews].join(' || ')
-  assert.deepEqual(compatibility.previews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1'])
+  assert.deepEqual(compatibility.previews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1', '0.1.7-alpha.2'])
+  assert.deepEqual(compatibility.releaseTargets, ['0.1.7-alpha.2'])
   for (const [name, version] of Object.entries(pkg.peerDependencies)) {
     if (name.startsWith('@deepseek-ai/dsh-')) assert.equal(version, range, name)
   }
@@ -121,6 +122,7 @@ test('release is gated by checks, an immutable draft, and version-appropriate ch
   assert.match(ci, /Official DSH end-to-end acceptance/u)
   assert.match(ci, /accept-official-release\.ps1/u)
   assert.match(publish, /needs: official-dsh-acceptance/u)
+  assert.match(publish, /c\.releaseTargets \?\? \[c\.latestTested,c\.previews\.at\(-1\)\]/u)
   assert.match(publish, /--draft --prerelease/u)
   assert.match(publish, /--draft --latest/u)
   assert.match(publish, /--title "\$TAG"/u)
