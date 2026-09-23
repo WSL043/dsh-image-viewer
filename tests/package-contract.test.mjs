@@ -16,7 +16,7 @@ test('declares one optional web client plugin', async () => {
   const compatibility = JSON.parse(await readFile(new URL('compatibility.json', root), 'utf8'))
   assert.equal(pkg.name, 'dsh-image-viewer')
   assert.match(pkg.version, /^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/u)
-  assert.equal(pkg.version, '0.1.3-beta.0')
+  assert.equal(pkg.version, '0.1.3-beta.1')
   assert.equal(pkg.publishConfig.tag, 'next')
   assert.equal(compatibility.latestTested, '0.1.2-rc.1')
   assert.ok(compatibility.supported.includes('0.1.2-rc.1'))
