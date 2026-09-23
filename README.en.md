@@ -58,6 +58,8 @@ dsh-image-viewer@0.1.2
 
 **This version supports DSH 0.1.6-alpha.2 and 0.1.7-alpha.1.** Do not paste a complete `dsh plugin ...` command into the package field or treat the repository's `main` branch as a qualified release package.
 
+For **DSH 0.1.7-alpha.2**, install the preview `dsh-image-viewer@0.1.3-beta.0` in the same field. It does not replace the npm stable tag. Follow the page's refresh or restart instruction after installation.
+
 ### Terminal installation (optional)
 
 Run in the DSH or Portable terminal:

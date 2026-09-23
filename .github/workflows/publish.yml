@@ -33,7 +33,7 @@ jobs:
       - uses: actions/setup-node@v6
         with: { node-version: 24, package-manager-cache: false }
       - id: versions
-        run: node -e "const c=require('./compatibility.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'dsh_versions='+JSON.stringify([...new Set([c.latestTested,c.previews.at(-1)])])+'\n')"
+        run: node -e "const c=require('./compatibility.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'dsh_versions='+JSON.stringify([...new Set(c.releaseTargets ?? [c.latestTested,c.previews.at(-1)])])+'\n')"
   official-dsh-acceptance:
     name: Official DSH end-to-end acceptance (${{ matrix.dsh_version }})
     needs: versions
