@@ -16,7 +16,7 @@ test('declares one optional web client plugin', async () => {
   const compatibility = JSON.parse(await readFile(new URL('compatibility.json', root), 'utf8'))
   assert.equal(pkg.name, 'dsh-image-viewer')
   assert.match(pkg.version, /^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/u)
-  assert.equal(pkg.version, '0.1.3-beta.1')
+  assert.equal(pkg.version, '0.1.3-beta.2')
   assert.equal(pkg.publishConfig.tag, 'next')
   assert.equal(compatibility.latestTested, '0.1.2-rc.1')
   assert.ok(compatibility.supported.includes('0.1.2-rc.1'))
@@ -24,9 +24,9 @@ test('declares one optional web client plugin', async () => {
   assert.ok(pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-layout'))
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
   assert.ok(pkg.files.includes('compatibility.json'))
-  const range = [...compatibility.supported, ...compatibility.previews].join(' || ')
-  assert.deepEqual(compatibility.previews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1', '0.1.7-alpha.2'])
-  assert.deepEqual(compatibility.releaseTargets, ['0.1.7-alpha.2'])
+  const range = compatibility.releaseTargets.join(' || ')
+  assert.deepEqual(compatibility.previews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1', '0.1.7-alpha.2', '0.1.7-rc.1'])
+  assert.deepEqual(compatibility.releaseTargets, ['0.1.7-rc.1'])
   for (const [name, version] of Object.entries(pkg.peerDependencies)) {
     if (name.startsWith('@deepseek-ai/dsh-')) assert.equal(version, range, name)
   }
