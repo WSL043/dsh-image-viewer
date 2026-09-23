@@ -33,7 +33,7 @@ jobs:
           published="$(npm view dsh-image-viewer dist-tags.latest)"
           node scripts/ci-change-plan.mjs --base "$BASE_SHA" --published "$published"
       - id: versions
-        run: node -e "const c=require('./compatibility.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'dsh_versions='+JSON.stringify([...new Set([c.latestTested,c.previews.at(-1)])])+'\n')"
+        run: node -e "const c=require('./compatibility.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'dsh_versions='+JSON.stringify([...new Set(c.releaseTargets ?? [c.latestTested,c.previews.at(-1)])])+'\n')"
 
   behavior:
     needs: plan
