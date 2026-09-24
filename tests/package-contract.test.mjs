@@ -34,6 +34,8 @@ test('declares one optional web client plugin', async () => {
   assert.match(acceptance, /\[string\] \$DshVersion = '0\.1\.2-rc\.1'/u)
   const upstreamWorkflow = await readFile(new URL('.github/workflows/upstream-compatibility.yml', root), 'utf8')
   assert.match(upstreamWorkflow, /tags\.latest, tags\.alpha, tags\.next/u)
+  assert.match(upstreamWorkflow, /readFileSync\('compatibility\.json'/u)
+  assert.match(upstreamWorkflow, /matrix=\$\{JSON\.stringify\(\[\.\.\.new Set\(targets\)\]\)\}/u)
 })
 test('uses the additive shell overlay and an optional service', async () => {
   const source = await readFile(new URL('src/client.jsx', root), 'utf8')
