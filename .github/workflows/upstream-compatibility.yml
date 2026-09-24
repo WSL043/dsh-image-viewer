@@ -28,7 +28,7 @@ jobs:
           if (!response.ok) throw new Error(`Registry HTTP ${response.status}`);
           const registry = await response.json();
           const tags = registry['dist-tags'];
-          const versions = [...new Set([tags.latest, tags.alpha].filter(Boolean))];
+          const versions = [...new Set([tags.latest, tags.alpha, tags.next].filter(Boolean))];
           for (const version of versions) {
             if (!/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(version) || !registry.versions[version]) throw new Error('Invalid published DSH version');
           }
