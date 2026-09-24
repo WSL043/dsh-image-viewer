@@ -22,7 +22,7 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 
 > Release 0.1.0 is published to npm. Unsupported image markup is left untouched instead of being guessed.
 
-Release checks exercise real attachments on stable and current Alpha DSH: gallery navigation, zoom, pan, download, region notes, and focus restoration. A six-hour upstream check retains browser and startup evidence on failure; it does not automatically claim compatibility or publish a release.
+Release checks exercise real attachments on stable and current preview DSH: gallery navigation, zoom, pan, download, region notes, and focus restoration. A six-hour upstream check retains browser and startup evidence on failure; it does not automatically claim compatibility or publish a release.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-en.png" width="900" alt="DSH Image Viewer displaying an illustration with fit, original-size, download, and an inline numbered region note">
@@ -58,7 +58,7 @@ dsh-image-viewer@0.1.2
 
 **This version supports DSH 0.1.6-alpha.2 and 0.1.7-alpha.1.** Do not paste a complete `dsh plugin ...` command into the package field or treat the repository's `main` branch as a qualified release package.
 
-For **DSH 0.1.7-alpha.2**, install the preview `dsh-image-viewer@0.1.3-beta.0` in the same field. It does not replace the npm stable tag. Follow the page's refresh or restart instruction after installation.
+For **DSH 0.1.7-rc.2**, install the preview `dsh-image-viewer@0.1.3-beta.3` in the same field. Use `0.1.3-beta.2` for DSH `0.1.7-rc.1` or `0.1.3-beta.1` for `0.1.7-alpha.2`. The preview does not replace the npm stable tag. Follow the page's refresh or restart instruction after installation.
 
 ### Terminal installation (optional)
 
