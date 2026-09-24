@@ -12,7 +12,7 @@ Use this guide only when the user asks to install, update, verify, or remove `ds
 
 ## Install or update
 
-For stable DSH, enter `dsh-image-viewer@0.1.2` in **Plugins → Add plugin**. For DSH 0.1.7-rc.2, enter the qualified preview `dsh-image-viewer@0.1.3-beta.3`; DSH 0.1.7-rc.1 uses `0.1.3-beta.2`, and DSH 0.1.7-alpha.2 uses `0.1.3-beta.1`. Enter only the package spec, not the whole command. Follow the activation action shown by DSH. The terminal alternative for the current preview is:
+For DSH 0.1.6-alpha.2 or 0.1.7-alpha.1 (the current stable Portable baseline), enter the stable plugin `dsh-image-viewer@0.1.2` in **Plugins → Add plugin**. For DSH 0.1.7-rc.2, enter the qualified preview `dsh-image-viewer@0.1.3-beta.3`; DSH 0.1.7-rc.1 uses `0.1.3-beta.2`, and DSH 0.1.7-alpha.2 uses `0.1.3-beta.1`. Enter only the package spec, not the whole command. Follow the activation action shown by DSH. The terminal alternative for the current preview is:
 
 ```sh
 dsh plugin --profile web add dsh-image-viewer@0.1.3-beta.3

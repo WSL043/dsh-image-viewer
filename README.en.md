@@ -22,7 +22,7 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 
 > Release 0.1.0 is published to npm. Unsupported image markup is left untouched instead of being guessed.
 
-Release checks exercise real attachments on stable and current preview DSH: gallery navigation, zoom, pan, download, region notes, and focus restoration. A six-hour upstream check retains browser and startup evidence on failure; it does not automatically claim compatibility or publish a release.
+Stable and preview plugin releases are checked against their respective DSH targets using real attachments: gallery navigation, zoom, pan, download, region notes, and focus restoration. The six-hour workflow records official version tags and tests only the current plugin's declared target; it does not claim support for other versions or publish automatically.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-en.png" width="900" alt="DSH Image Viewer displaying an illustration with fit, original-size, download, and an inline numbered region note">
