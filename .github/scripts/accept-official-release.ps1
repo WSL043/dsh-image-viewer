@@ -9,6 +9,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$pluginRowPattern = '(?m)^[ \t]*(?:(?:├──|└──|\+--)[ \t]*)?dsh-image-viewer(@|[ \t]+)\d'
 $package = (Resolve-Path -LiteralPath $PackagePath).Path
 $runner = Get-Command $DshRunner -CommandType Application -ErrorAction Stop | Select-Object -First 1
 $runnerPrefix = @(
@@ -52,14 +53,14 @@ function Get-ComposedConfig {
 function Assert-InstalledOnce {
     $list = Get-PluginList
     $config = Get-ComposedConfig
-    if ([regex]::Matches($list, 'dsh-image-viewer@').Count -ne 1) { throw 'The candidate package is not installed exactly once.' }
+    if ([regex]::Matches($list, $pluginRowPattern).Count -ne 1) { throw 'The candidate package is not installed exactly once.' }
     if ([regex]::Matches($config, 'id: wsl043-native-image-viewer').Count -ne 1) { throw 'The candidate bundle is not composed exactly once.' }
 }
 
 function Assert-Removed {
     $list = Get-PluginList
     $config = Get-ComposedConfig
-    if ($list -match 'dsh-image-viewer@' -or $config -match 'id: wsl043-native-image-viewer') { throw 'The plugin remains after removal.' }
+    if ($list -match $pluginRowPattern -or $config -match 'id: wsl043-native-image-viewer') { throw 'The plugin remains after removal.' }
 }
 
 function Start-And-ProbeWeb {

@@ -2,6 +2,51 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { chromium } from 'playwright'
+import { expect } from 'playwright/test'
+
+async function dismissOfficialFirstRunOverlay(page) {
+  const overlays = [
+    {
+      name: 'Internal Testing Notice / 内测声明',
+      dialog: /^(Internal Testing Notice|内测声明)$/i,
+      button: /^(Continue|继续)$/i,
+    },
+    {
+      name: 'Preview Notice / 预览版说明',
+      dialog: /^(Preview Notice|预览版说明)$/,
+      button: /^(Continue|继续)$/,
+    },
+    {
+      name: 'Add an API key to get started / 添加一个 API Key 开始使用',
+      dialog: /^(Add an API key to get started|添加一个 API Key 开始使用)$/i,
+      button: /^(Configure later|稍后配置)$/i,
+    },
+  ]
+
+  let previewNoticeDismissed = false
+  for (const firstRunOverlay of overlays) {
+    const overlay = page.getByRole('dialog', { name: firstRunOverlay.dialog })
+    if (!(await overlay.isVisible())) {
+      if (previewNoticeDismissed && firstRunOverlay.name.startsWith('Add an API key')) {
+        await overlay.waitFor({ state: 'visible', timeout: 5000 })
+      } else {
+        continue
+      }
+    }
+
+    const closeButton = overlay.getByRole('button', { name: firstRunOverlay.button })
+    if (await closeButton.count() !== 1) {
+      throw new Error(`The visible official ${firstRunOverlay.name} overlay has no unique recognized button.`)
+    }
+    if (!(await closeButton.isVisible()) || !(await closeButton.isEnabled())) {
+      throw new Error(`The official ${firstRunOverlay.name} overlay button is not visible and enabled.`)
+    }
+
+    await closeButton.click()
+    await expect(overlay).toBeHidden()
+    if (firstRunOverlay.name.startsWith('Preview Notice')) previewNoticeDismissed = true
+  }
+}
 
 const [url, evidence] = process.argv.slice(2)
 await mkdir(evidence, { recursive: true })
@@ -13,14 +58,7 @@ try {
   await page.goto(url, { waitUntil: 'domcontentloaded' })
   const notice = page.getByRole('dialog', { name: /Internal Testing Notice|内测声明/ })
   await notice.waitFor({ timeout: 5000 }).catch(() => {})
-  // Only the isolated, keyless fixture skips onboarding; actual image UI stays intact.
-  for (const dialog of await page.getByRole('dialog').all()) {
-    if (!/Internal Testing Notice|内测声明|API Key|密钥/i.test(await dialog.innerText())) continue
-    await dialog.evaluate(element => {
-      ;(element.parentElement ?? element).remove()
-      for (const inert of document.querySelectorAll('[inert]')) inert.removeAttribute('inert')
-    })
-  }
+  await dismissOfficialFirstRunOverlay(page)
   const session = page.locator('[role="treeitem"]').filter({ has: page.locator('button[aria-label^="Session actions for "],button[aria-label^="会话“"]') }).first()
   // Newer DSH can already select a blank workspace session without a row menu.
   if (await session.count()) await session.click()
