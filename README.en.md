@@ -51,21 +51,21 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 2. Paste this line into **Package name or address**, then select Install:
 
 ```text
-dsh-image-viewer@0.1.2
+dsh-image-viewer@0.1.3
 ```
 
 3. Follow the result shown on the page. Refresh or restart only when requested. If installation fails, read its error before retrying.
 
-**This version supports DSH 0.1.6-alpha.2 and 0.1.7-alpha.1.** Do not paste a complete `dsh plugin ...` command into the package field or treat the repository's `main` branch as a qualified release package.
+**Version 0.1.3 targets DSH 0.1.7-alpha.1 and 0.1.7-rc.2 with the same package.** Release publication requires real-operation acceptance on both targets. Other core versions are not covered by this release. Enter only the package spec in Plugins → Add plugin; follow the host refresh/restart action.
 
-For **DSH 0.1.7-rc.2**, install the preview `dsh-image-viewer@0.1.3-beta.3` in the same field. Use `0.1.3-beta.2` for DSH `0.1.7-rc.1` or `0.1.3-beta.1` for `0.1.7-alpha.2`. The preview does not replace the npm stable tag. Follow the page's refresh or restart instruction after installation.
+Older core-specific preview packages remain available in release history.
 
 ### Terminal installation (optional)
 
 Run in the DSH or Portable terminal:
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.2
+dsh plugin --profile web add dsh-image-viewer@0.1.3
 ```
 
 If DSH is running, save your work and restart after this terminal operation to load the change. For older cores, choose the plugin version verified in its release notes.
