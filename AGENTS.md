@@ -1,4 +1,4 @@
-> Current release: dsh-image-viewer@0.1.4, qualified targets DSH 0.1.7-alpha.1, 0.1.7-rc.2, and 0.2.0-rc.1. Use the same package for all three; other historical versions below are not current release targets.
+> Current release: dsh-image-viewer@0.1.5, qualified targets DSH 0.1.7-alpha.1, 0.1.7-rc.2, 0.2.0-rc.1, and 0.2.0-rc.2. Use the same package for all four; other historical versions below are not current release targets.
 
 # Agent installation guide
 
@@ -14,10 +14,10 @@ Use this guide only when the user asks to install, update, verify, or remove `ds
 
 ## Install or update
 
-For DSH 0.1.7-alpha.1, 0.1.7-rc.2, or 0.2.0-rc.1, enter `dsh-image-viewer@0.1.4` in **Plugins → Add plugin**. Enter only the package spec, not the whole command. Follow the activation action shown by DSH. Other cores require their own qualified historical package. Terminal alternative:
+For DSH 0.1.7-alpha.1, 0.1.7-rc.2, 0.2.0-rc.1, or 0.2.0-rc.2, enter `dsh-image-viewer@0.1.5` in **Plugins → Add plugin**. Enter only the package spec, not the whole command. Follow the activation action shown by DSH. Other cores require their own qualified historical package. Terminal alternative:
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.4
+dsh plugin --profile web add dsh-image-viewer@0.1.5
 ```
 
 DSH-Portable exposes the same standard `dsh plugin` command. Do not use a private executable path in public instructions.
