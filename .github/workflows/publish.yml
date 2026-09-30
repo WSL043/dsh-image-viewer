@@ -1,19 +1,30 @@
 name: Release
+run-name: Release ${{ inputs.request_id || github.sha }}
 
 on:
   workflow_dispatch:
     inputs:
+      request_id:
+        description: Optional correlation id used by the compatibility autopilot
+        required: false
+        type: string
+      release_kind:
+        description: Release-note template
+        required: false
+        default: feature
+        type: choice
+        options: [feature, bugfix, compatibility]
       contributor_prs:
         description: Comma-separated merged contributor PR numbers to credit
         required: false
         type: string
       release_notes_en:
         description: English user-facing release summary
-        required: true
+        required: false
         type: string
       release_notes_zh:
         description: Chinese user-facing release summary
-        required: true
+        required: false
         type: string
 
 permissions:
@@ -33,7 +44,7 @@ jobs:
       - uses: actions/setup-node@v6
         with: { node-version: 24, package-manager-cache: false }
       - id: versions
-        run: node -e "const c=require('./compatibility.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'dsh_versions='+JSON.stringify([...new Set(c.releaseTargets ?? [c.latestTested,c.previews.at(-1)])])+'\n')"
+        run: node -e "const c=require('./compatibility.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'dsh_versions='+JSON.stringify(c.releaseTargets)+'\n')"
   official-dsh-acceptance:
     name: Official DSH end-to-end acceptance (${{ matrix.dsh_version }})
     needs: versions
@@ -143,12 +154,20 @@ jobs:
         env:
           CONTRIBUTOR_PRS: ${{ inputs.contributor_prs }}
           GH_TOKEN: ${{ github.token }}
+          RELEASE_KIND: ${{ inputs.release_kind }}
           NOTES_EN: ${{ inputs.release_notes_en }}
           NOTES_ZH: ${{ inputs.release_notes_zh }}
           VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${RELEASE_KIND:-feature}" == compatibility ]]; then
+            NOTES_EN='Compatibility range now follows the official latest three DSH cores; no functionality changes.'
+            NOTES_ZH='兼容范围改为官方最新 3 个 DSH 内核；功能无变化。'
+          else
+            test -n "${NOTES_EN:-}"
+            test -n "${NOTES_ZH:-}"
+          fi
           if [[ "$NOTES_EN" == *'\n'* || "$NOTES_ZH" == *'\n'* ]]; then
             echo 'Release notes must contain real line breaks, not literal \n sequences.' >&2
             exit 1
