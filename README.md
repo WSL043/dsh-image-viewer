@@ -11,6 +11,8 @@
 [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/WSL043/dsh-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-image-viewer/stargazers)
 
+[English](README.en.md) · [安装](#安装) · [隐私](#隐私)
+
 </div>
 
 <p align="center">
