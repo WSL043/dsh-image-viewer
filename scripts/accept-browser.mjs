@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { chromium } from 'playwright'
 import { expect } from 'playwright/test'
 
-async function dismissOfficialFirstRunOverlay(page) {
+async function dismissOfficialFirstRunOverlayOnce(page) {
   const overlays = [
     {
       name: 'Internal Testing Notice / 内测声明',
@@ -24,6 +24,7 @@ async function dismissOfficialFirstRunOverlay(page) {
   ]
 
   let previewNoticeDismissed = false
+  let dismissedAny = false
   for (const firstRunOverlay of overlays) {
     const overlay = page.getByRole('dialog', { name: firstRunOverlay.dialog })
     if (!(await overlay.isVisible())) {
@@ -44,7 +45,21 @@ async function dismissOfficialFirstRunOverlay(page) {
 
     await closeButton.click()
     await expect(overlay).toBeHidden()
+    dismissedAny = true
     if (firstRunOverlay.name.startsWith('Preview Notice')) previewNoticeDismissed = true
+  }
+  return dismissedAny
+}
+
+// The official first-run notices can appear a moment after the page loads, so keep dismissing until
+// nothing is dismissed and no dialog is visible on two consecutive checks.
+async function dismissOfficialFirstRunOverlay(page) {
+  let quietChecks = 0
+  for (let pass = 0; pass < 12 && quietChecks < 2; pass += 1) {
+    const dismissed = await dismissOfficialFirstRunOverlayOnce(page)
+    const dialogVisible = await page.locator('[role="dialog"]').first().isVisible().catch(() => false)
+    quietChecks = !dismissed && !dialogVisible ? quietChecks + 1 : 0
+    await page.waitForTimeout(dismissed ? 400 : 800)
   }
 }
 
