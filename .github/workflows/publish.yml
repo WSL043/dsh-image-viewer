@@ -78,7 +78,7 @@ jobs:
   release:
     needs: official-dsh-acceptance
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     permissions:
       contents: write
       id-token: write
@@ -259,13 +259,14 @@ jobs:
           fi
           tag_after=''
           latest_after=''
-          for attempt in {1..60}; do
+          # The registry can take several minutes to show a new version; wait up to 20 minutes.
+          for attempt in {1..120}; do
             tag_after="$(npm view dsh-image-viewer "dist-tags.$npm_tag" 2>/dev/null || true)"
             latest_after="$(npm view dsh-image-viewer dist-tags.latest 2>/dev/null || true)"
             if [[ "$tag_after" == "$version" && "$latest_after" == "$expected_latest" ]]; then
               break
             fi
-            sleep 5
+            sleep 10
           done
           if [[ "$tag_after" != "$version" || "$latest_after" != "$expected_latest" ]]; then
             echo "npm tag propagation did not reconcile: expected $npm_tag=$version/latest=$expected_latest, observed $npm_tag=$tag_after/latest=$latest_after. The package may already be published; rerun reconciliation without changing its version." >&2
