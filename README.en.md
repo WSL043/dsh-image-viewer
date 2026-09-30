@@ -11,6 +11,8 @@ A lightweight viewer for zooming, browsing, downloading, and annotating images a
 [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/WSL043/dsh-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-image-viewer/stargazers)
 
+[中文](README.md) · [Install](#install) · [Privacy](#privacy)
+
 </div>
 
 <p align="center">
