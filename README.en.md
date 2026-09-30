@@ -1,13 +1,8 @@
-> [!NOTE]
-> This is an optional, independently removable DSH plugin. It enhances viewing, downloading, and region notes for images DSH already displays without taking over conversations, attachments, or model workflows. Image-producing plugins may also use it as a shared viewer when available.
-
 <div align="center">
 
 # DSH Image Viewer
 
-Package: `dsh-image-viewer`. [Awesome DSH listing](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/data/plugins/WSL043__dsh-image-viewer.yml) · [Chat Manager](https://github.com/WSL043/dsh-chat-manager)
-
-A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades images already shown by DSH without replacing the conversation, attachment, or model workflows.
+A lightweight viewer for zooming, browsing, downloading, and annotating images already shown by DSH.
 
 [![CI](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/WSL043/dsh-image-viewer/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-image-viewer?logo=npm&label=npm)](https://www.npmjs.com/package/dsh-image-viewer)
@@ -16,36 +11,27 @@ A compact, provider-neutral image viewer for DeepSeek Harness. It upgrades image
 [![MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/WSL043/dsh-image-viewer?style=flat&logo=github&label=stars)](https://github.com/WSL043/dsh-image-viewer/stargazers)
 
-[Install](#install) · [Privacy](#privacy) · [简体中文](README.md)
-
 </div>
 
-> Release 0.1.0 is published to npm. Unsupported image markup is left untouched instead of being guessed.
-
-Stable and preview plugin releases are checked against their respective DSH targets using real attachments: gallery navigation, zoom, pan, download, region notes, and focus restoration. The six-hour workflow records official version tags and tests only the current plugin's declared target; it does not claim support for other versions or publish automatically.
-
 <p align="center">
-  <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-en.png" width="900" alt="DSH Image Viewer displaying an illustration with fit, original-size, download, and an inline numbered region note">
+  <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-en.png" width="900" alt="DSH Image Viewer with zoom, download, and a numbered region note">
 </p>
 
 ## Features
 
-- Wheel zoom centered on the pointer, drag-to-pan, touch pinch, and double-click 100% view.
-- Fit and original-size controls, original-file download, keyboard navigation, and multi-image galleries.
-- 0.1.1: download progress when the file size is available, cancellation and retry; switching images or closing the viewer cancels the active download.
-- Visible filename, dimensions and pixel-scale percentage; very wide images can reach 100%, and window resizing keeps the image within reach.
-- Loading and retryable error states, gesture reset on image changes, and independent notes for unnamed images.
-- 0.1.1: closing an annotated native DSH image adds a numbered PNG and notes to the originating conversation draft, preserving existing text without sending. Unchanged notes are not added twice. Failed intake preserves notes with retry and close-only choices.
-- One-shot region marking with each note edited beside its numbered image marker. Enter saves and collapses the note;
-  Shift+Enter adds a new line.
-- Light and dark themes through DSH design tokens, responsive layout, focus containment, and reduced-motion support.
-- Optional `nativeImageViewer` client service so image-producing plugins can add their own continuation action.
-
-DSH keeps working when the plugin is absent or cannot recognize a newer image surface. Other plugins may use the service when present, but must retain their own basic fallback.
+- Pointer-centered zoom, drag, touch pinch, double-click 100%, fit/original-size controls, keyboard navigation, and multi-image galleries.
+- Shows filenames, dimensions, and scale; large images can reach 100% and stay visible when the window is resized.
+- Original-file downloads show available progress and can be cancelled or retried; switching images or closing the viewer cancels a download.
+- Clear loading and retryable error states; image changes reset gestures and keep annotations separate.
+- Mark image regions and edit notes beside their numbered markers. Enter saves; Shift+Enter adds a line.
+- Closing an annotated native DSH image adds its numbered PNG and notes to the current draft without sending or duplicating them; failures remain retryable.
+- DSH light/dark themes, responsive layout, focus containment, and reduced-motion support.
 
 ## Install
 
-### Official plugin page (recommended)
+**[DSH-Portable](https://github.com/WSL043/DSH-Portable) ships with this plugin preinstalled.** Enable or uninstall it on the Plugins page; other DSH users can install it below.
+
+### Plugin page (recommended)
 
 1. Open **Plugins → Add plugin** in DSH.
 2. Paste this line into **Package name or address**, then select Install:
@@ -54,50 +40,41 @@ DSH keeps working when the plugin is absent or cannot recognize a newer image su
 dsh-image-viewer@0.1.5
 ```
 
-3. Follow the result shown on the page. Refresh or restart only when requested. If installation fails, read its error before retrying.
+3. Follow the result shown on the page; refresh or restart only when requested.
 
-**Version 0.1.5 targets DSH 0.1.7-alpha.1, 0.1.7-rc.2, 0.2.0-rc.1, and 0.2.0-rc.2 with the same package.** This release adds only the 0.2.0-rc.2 target; there are no functional changes. Release publication requires real-operation acceptance on all four targets. Other core versions are not covered by this release. Enter only the package spec in Plugins → Add plugin; follow the host refresh/restart action.
+**Version 0.1.5 supports DSH cores `0.1.7-alpha.1`, `0.1.7-rc.2`, `0.2.0-rc.1`, and `0.2.0-rc.2`.**
 
-Older core-specific preview packages remain available in release history.
+### Terminal (optional)
 
-### Terminal installation (optional)
-
-Run in the DSH or Portable terminal:
+For official DSH Desktop, install its bundled command through **Manage dsh Command…**; after initialization, fully quit the app before using `--profile desktop`. DSH-Portable 0.x and the Web profile use `--profile web`.
 
 ```sh
+dsh plugin --profile desktop add dsh-image-viewer@0.1.5
 dsh plugin --profile web add dsh-image-viewer@0.1.5
 ```
 
-If DSH is running, save your work and restart after this terminal operation to load the change. For older cores, choose the plugin version verified in its release notes.
+After a terminal operation, restart the corresponding profile as prompted by the host.
 
-## Update
+## Update and uninstall
 
-Use the installed plugin’s update action on the official **Plugins** page. If it is unavailable, use **Add plugin** with the published target `package@version`. Refresh or restart only when requested. The version-pinned terminal command above is an alternative.
+Update or uninstall from the **Plugins** page. If no update action is offered, enter the target `package@version` under **Add plugin**. To uninstall from a terminal, run `dsh plugin --profile web remove dsh-image-viewer`; for official Desktop, quit the app and use the `desktop` profile as described above.
 
-## Uninstall
-
-Uninstall this plugin from the official **Plugins** page, or use the terminal:
-
-```sh
-dsh plugin --profile web remove dsh-image-viewer
-```
-
-Uninstalling restores DSH's built-in image lightbox. It does not remove conversations, attachments, generated images, provider plugins, or credentials.
-
-## Custom download integration
-
-When calling `nativeImageViewer.open()`, an item's `download.onInvoke` receives `{ item, src, signal, onProgress }`. Pass `signal` to the download request and report bytes through `onProgress({ loaded, total })`. Omit `total` when the size is unknown; the viewer shows a preparing state and a cancel button.
-
-Existing callbacks remain compatible. Custom transfers must honor `signal` to stop their underlying work. The viewer ignores late progress and results from cancelled operations. Download authorization and original-file integrity checks remain the image provider's responsibility.
+Uninstalling restores DSH's built-in image viewer and does not delete conversations or images.
 
 ## Privacy
 
-The plugin reads only URLs already rendered by DSH, does not call a model, and does not read provider credentials. The annotation workflow adds images and notes through DSH's attachment and draft APIs; the user decides whether to send. Notes remain available when reopening an image within the current page, which does not imply a sent message or permanent conversation storage.
+The plugin reads only image URLs already rendered by DSH; it does not call a model or read provider credentials. Annotations use DSH's attachment and draft APIs, leaving the decision to send with the user. Reopening an image in the current page may retain its note; this does not mean it was sent or permanently stored.
 
 ## Support
 
-Open the [bug report form](https://github.com/WSL043/dsh-image-viewer/issues/new?template=bug-report.yml) with the exact plugin version, DSH version, operating system, image location (message or composer), and the action that failed. Do not include private images, credentials, or full session logs. Report sensitive security problems privately through [GitHub Security Advisories](https://github.com/WSL043/dsh-image-viewer/security/advisories/new).
+Use the [bug report form](https://github.com/WSL043/dsh-image-viewer/issues/new?template=bug-report.yml) with the plugin/DSH versions, operating system, image location, and failed action. Do not include private images, credentials, or full session logs. Report security issues privately through [GitHub Security Advisories](https://github.com/WSL043/dsh-image-viewer/security/advisories/new).
 
-## License
+## License and quality
 
-[简体中文](README.md) · [Report a bug](https://github.com/WSL043/dsh-image-viewer/issues/new?template=bug-report.yml) · [Request a feature](https://github.com/WSL043/dsh-image-viewer/issues/new?template=feature-request.yml) · [MIT](LICENSE)
+[MIT](LICENSE). Each declared core is checked in the live interface.
+
+## Developers
+
+When calling `nativeImageViewer.open()`, `download.onInvoke` receives `{ item, src, signal, onProgress }`. Pass `signal` to the download request and report bytes with `onProgress({ loaded, total })`; omit `total` when the size is unknown. Custom transfers must honor `signal` to support cancellation. Download authorization and original-file checks remain the image provider's responsibility.
+
+[简体中文](README.md) · [Awesome DSH listing](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/data/plugins/WSL043__dsh-image-viewer.yml) · [Chat Manager](https://github.com/WSL043/dsh-chat-manager)
