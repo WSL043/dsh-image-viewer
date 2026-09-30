@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string] $PackagePath,
-    [string] $DshVersion = '0.1.2-rc.1',
+    [string] $DshVersion = '0.2.0-rc.2',
     [string] $Profile = 'web',
     [string] $DshRunner = 'pnpm',
     [int] $StartupTimeoutSeconds = 45,
