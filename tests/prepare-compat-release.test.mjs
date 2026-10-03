@@ -3,9 +3,11 @@ import test from 'node:test'
 
 import {
   compareDshVersions,
+  extractDeepSeekReleaseAgeSelectors,
   planCompatibilityUpdate,
   rewriteAgentCompatibility,
   rewriteCompatibilityBlock,
+  rewriteReleaseAgeCohort,
   selectLatestDshVersions,
 } from '../scripts/prepare-compat-release.mjs'
 
@@ -73,4 +75,17 @@ test('rewrites README and Agent installation compatibility text without historic
   assert.match(agents, /Current release: dsh-image-viewer@0\.1\.6/u)
   assert.match(agents, /For DSH 0\.2\.0-rc\.2, 0\.2\.0-rc\.1, and 0\.1\.7-rc\.2/u)
   assert.doesNotMatch(agents, /historical package|0\.1\.7-alpha\.1/u)
+})
+
+test('the release-age cohort covers every official @deepseek-ai package released with a core', () => {
+  const lockfile = "lockfileVersion: '9.0'\n\npackages:\n  '@deepseek-ai/cosmokit@1.8.6-alpha.1':\n  '@deepseek-ai/dsh-client-locale@0.2.1-alpha.1':\n  'react@18.3.1':\n\nsnapshots:\n  marker: true\n"
+  assert.deepEqual(extractDeepSeekReleaseAgeSelectors(lockfile), [
+    '@deepseek-ai/cosmokit@1.8.6-alpha.1',
+    '@deepseek-ai/dsh-client-locale@0.2.1-alpha.1',
+  ])
+  const workspace = "minimumReleaseAge: 1440\n\nminimumReleaseAgeExclude:\n  - '@deepseek-ai/cordis@4.0.1'\n  - 'other@1.0.0'\n"
+  const rewritten = rewriteReleaseAgeCohort(workspace, ['@deepseek-ai/cosmokit@1.8.6-alpha.1'])
+  assert.match(rewritten, /- '@deepseek-ai\/cosmokit@1\.8\.6-alpha\.1'/u)
+  assert.match(rewritten, /- 'other@1\.0\.0'/u)
+  assert.doesNotMatch(rewritten, /cordis@4\.0\.1/u)
 })
