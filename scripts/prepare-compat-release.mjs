@@ -143,7 +143,11 @@ export function extractDeepSeekReleaseAgeSelectors(lockfile) {
     throw new Error('pnpm lockfile does not contain packages and snapshots sections')
   }
   const packages = lockfile.slice(packagesStart, snapshotsStart)
-  return [...new Set([...packages.matchAll(/^  '(@deepseek-ai\/dsh-[^']+@[^']+)':$/gmu)].map(match => match[1]))].sort()
+  // Every package from the official @deepseek-ai scope at the locked version joins the cohort: upstream releases
+  // its vendor packages (cordis, cosmokit, schemastery, ...) together with the dsh-* packages.
+  const selectors = [...packages.matchAll(/^  '(@deepseek-ai\/[^']+@[^']+)':$/gmu)].map(match => match[1])
+  if (selectors.length === 0) throw new Error('pnpm lockfile contains no @deepseek-ai package selectors')
+  return [...new Set(selectors)].sort()
 }
 
 export function rewriteReleaseAgeCohort(workspace, selectors) {
@@ -151,7 +155,7 @@ export function rewriteReleaseAgeCohort(workspace, selectors) {
   const match = marker.exec(workspace)
   if (match === null) throw new Error('missing minimumReleaseAgeExclude list')
   const preserved = match[1].split(/\r?\n/u).filter(line => line.trim().startsWith('- ')
-    && !line.includes("'@deepseek-ai/dsh-"))
+    && !line.includes("'@deepseek-ai/"))
   const block = [...new Set([...preserved, ...selectors.map(selector => `  - '${selector}'`)])].sort()
   return workspace.replace(marker, `minimumReleaseAgeExclude:\n${block.join('\n')}\n`)
 }
