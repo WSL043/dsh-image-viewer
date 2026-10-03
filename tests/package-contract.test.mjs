@@ -16,9 +16,8 @@ test('declares one optional web client plugin', async () => {
   const compatibility = JSON.parse(await readFile(new URL('compatibility.json', root), 'utf8'))
   assert.equal(pkg.name, 'dsh-image-viewer')
   assert.match(pkg.version, /^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/u)
-  assert.equal(pkg.version, '0.1.6')
   assert.equal(pkg.publishConfig.tag, 'latest')
-  assert.equal(compatibility.latestTested, '0.2.0-rc.2')
+  assert.equal(compatibility.latestTested, compatibility.releaseTargets[0])
   assert.equal(pkg.dsh.client.platform, 'web')
   assert.ok(pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-layout'))
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
@@ -26,7 +25,8 @@ test('declares one optional web client plugin', async () => {
   const range = compatibility.releaseTargets.join(' || ')
   assert.deepEqual(compatibility.testFixtures.historicalSupported, ['0.1.1-rc.2', '0.1.2-rc.1'])
   assert.deepEqual(compatibility.testFixtures.historicalPreviews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1', '0.1.7-alpha.2', '0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.2'])
-  assert.deepEqual(compatibility.releaseTargets, ['0.2.0-rc.2', '0.2.0-rc.1', '0.1.7-rc.2'])
+  // The compatibility autopilot moves these with each core release; only their shape is fixed here.
+  assert.equal(compatibility.releaseTargets.length, 3)
   assert.equal(compatibility.supported, undefined)
   assert.equal(compatibility.previews, undefined)
   for (const [name, version] of Object.entries(pkg.peerDependencies)) {
@@ -35,7 +35,7 @@ test('declares one optional web client plugin', async () => {
   for (const filename of ['README.md', 'README.en.md', 'AGENTS.md']) {
     const guide = await readFile(new URL(filename, root), 'utf8')
     for (const version of compatibility.releaseTargets) assert.ok(guide.includes(version), `${filename} lacks ${version}`)
-    assert.ok(guide.includes('dsh-image-viewer@0.1.6'), `${filename} lacks the prepared package version`)
+    assert.ok(guide.includes(`dsh-image-viewer@${pkg.version}`), `${filename} lacks the prepared package version`)
     assert.doesNotMatch(guide, /0\.1\.7-alpha\.1/u, `${filename} must not claim the out-of-window core`)
   }
   const acceptance = await readFile(new URL('.github/scripts/accept-official-release.ps1', root), 'utf8')
