@@ -5,6 +5,8 @@ import {
   compareDshVersions,
   extractDeepSeekReleaseAgeSelectors,
   planCompatibilityUpdate,
+  cordisHostOf,
+  widenCordisPeer,
   rewriteAgentCompatibility,
   rewriteCompatibilityBlock,
   rewriteReleaseAgeCohort,
@@ -64,6 +66,17 @@ test('moves history to test fixtures and generates a peer range with only the to
   assert.equal(planCompatibilityUpdate({ ...state, compatibility: { ...state.compatibility, releaseTargets: targets } }, targets), null)
   assert.throws(() => planCompatibilityUpdate(state, [...targets].reverse()), /descending semver order/u)
   assert.throws(() => planCompatibilityUpdate(state, targets.slice(0, 2)), /newest three/u)
+})
+
+test('the cordis peer admits the exact host each target core ships, including prereleases', () => {
+  assert.equal(cordisHostOf('~4.0.5-alpha.1'), '4.0.5-alpha.1')
+  assert.equal(cordisHostOf('~4.0.4'), '4.0.4')
+  assert.throws(() => cordisHostOf('>=4'), /unsupported cordis/u)
+  assert.equal(widenCordisPeer('4.0.3 || 4.0.4', ['4.0.5-alpha.1', '4.0.4']), '4.0.3 || 4.0.4 || 4.0.5-alpha.1')
+  const state = fixture()
+  state.manifest.peerDependencies['@deepseek-ai/cordis'] = '4.0.3 || 4.0.4'
+  const update = planCompatibilityUpdate(state, targets, ['4.0.5-alpha.1', '4.0.4', '4.0.4'])
+  assert.equal(update.manifest.peerDependencies['@deepseek-ai/cordis'], '4.0.3 || 4.0.4 || 4.0.5-alpha.1')
 })
 
 test('rewrites README and Agent installation compatibility text without historical core claims', () => {
