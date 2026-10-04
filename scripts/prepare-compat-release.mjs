@@ -60,7 +60,20 @@ export function selectLatestDshVersions(versions, count = RELEASE_TARGET_COUNT) 
   return valid.slice(0, count)
 }
 
-export function planCompatibilityUpdate(state, targetVersions) {
+// The cordis host each core ships, read from its `~x.y.z` dependency; a prerelease host such as
+// 4.0.5-alpha.1 is outside every plain range, so it is listed exactly.
+export function cordisHostOf(range) {
+  const match = /^[~^]?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/u.exec(String(range ?? '').trim())
+  if (match === null) throw new Error(`unsupported cordis dependency range: ${range}`)
+  return match[1]
+}
+
+export function widenCordisPeer(peer, hosts) {
+  const listed = String(peer ?? '').split(/\s*\|\|\s*/u).filter(Boolean)
+  return [...new Set([...listed, ...hosts])].join(' || ')
+}
+
+export function planCompatibilityUpdate(state, targetVersions, cordisHosts = []) {
   if (!Array.isArray(targetVersions) || targetVersions.length !== RELEASE_TARGET_COUNT) {
     throw new Error(`exactly the newest three DSH versions are required`)
   }
@@ -89,6 +102,9 @@ export function planCompatibilityUpdate(state, targetVersions) {
   const peerRange = targets.join(' || ')
   for (const name of Object.keys(manifest.peerDependencies)) {
     if (name.startsWith('@deepseek-ai/dsh-')) manifest.peerDependencies[name] = peerRange
+  }
+  if (cordisHosts.length > 0 && Object.hasOwn(manifest.peerDependencies, '@deepseek-ai/cordis')) {
+    manifest.peerDependencies['@deepseek-ai/cordis'] = widenCordisPeer(manifest.peerDependencies['@deepseek-ai/cordis'], cordisHosts)
   }
   for (const name of Object.keys(manifest.devDependencies)) {
     if (name.startsWith('@deepseek-ai/dsh-')) manifest.devDependencies[name] = targets[0]
@@ -187,7 +203,12 @@ async function main() {
     readFile(resolve(root, 'compatibility.json'), 'utf8').then(JSON.parse),
     readFile(resolve(root, 'package.json'), 'utf8').then(JSON.parse),
   ])
-  const update = planCompatibilityUpdate({ compatibility, manifest }, targets)
+  const cordisHosts = await Promise.all(targets.map(async version => {
+    const response = await fetch(`https://registry.npmjs.org/@deepseek-ai%2fdsh/${version}`)
+    if (!response.ok) throw new Error(`Registry HTTP ${response.status} for @deepseek-ai/dsh@${version}`)
+    return cordisHostOf((await response.json()).dependencies?.['@deepseek-ai/cordis'])
+  }))
+  const update = planCompatibilityUpdate({ compatibility, manifest }, targets, cordisHosts)
   if (update === null) {
     process.stdout.write(`${JSON.stringify({ changed: false, dshVersions: targets })}\n`)
     return
