@@ -39,13 +39,13 @@
 2. 在“包名或地址”中粘贴下面这一行并点击安装：
 
 ```text
-dsh-image-viewer@0.1.8
+dsh-image-viewer@0.1.9
 ```
 
 3. 查看安装结果；仅在页面要求时刷新或重启。
 
 <!-- dsh-compatibility -->
-**版本 0.1.8 支持 DSH 内核 `0.2.1-alpha.1`、`0.2.0-rc.2`、`0.2.0-rc.1`。**
+**版本 0.1.9 支持 DSH 内核 `0.2.1-alpha.2`、`0.2.1-alpha.1`、`0.2.0-rc.2`。**
 <!-- /dsh-compatibility -->
 
 ### 终端安装（可选）
@@ -53,8 +53,8 @@ dsh-image-viewer@0.1.8
 官方 DSH Desktop 请先通过应用的 **Manage dsh Command…** 安装自带命令；完成一次初始化后，完全退出应用再运行 `--profile desktop`。DSH-Portable 0.x 和网页版使用 `--profile web`。
 
 ```sh
-dsh plugin --profile desktop add dsh-image-viewer@0.1.8
-dsh plugin --profile web add dsh-image-viewer@0.1.8
+dsh plugin --profile desktop add dsh-image-viewer@0.1.9
+dsh plugin --profile web add dsh-image-viewer@0.1.9
 ```
 
 终端操作后按宿主提示重新启动对应 profile。
