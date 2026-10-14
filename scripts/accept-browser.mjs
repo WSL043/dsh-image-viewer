@@ -29,7 +29,8 @@ async function dismissOfficialFirstRunOverlayOnce(page) {
     const overlay = page.getByRole('dialog', { name: firstRunOverlay.dialog })
     if (!(await overlay.isVisible())) {
       if (previewNoticeDismissed && firstRunOverlay.name.startsWith('Add an API key')) {
-        await overlay.waitFor({ state: 'visible', timeout: 5000 })
+        // Newer official cores may show no API key step, or a sign-in step instead; the generic pass below handles those.
+        if (!(await overlay.waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false))) continue
       } else {
         continue
       }
@@ -47,6 +48,15 @@ async function dismissOfficialFirstRunOverlayOnce(page) {
     await expect(overlay).toBeHidden()
     dismissedAny = true
     if (firstRunOverlay.name.startsWith('Preview Notice')) previewNoticeDismissed = true
+  }
+  // Any other first-run dialog (for example a sign-in step) is closed through its own dismiss button.
+  const other = page.locator('[role="dialog"]:visible').last()
+  if (await other.count()) {
+    const dismiss = other.getByRole('button', { name: /^(Close|关闭|Configure later|稍后配置|Set up later|Skip|跳过|Continue|继续)$/i })
+    if (await dismiss.count() >= 1) {
+      await dismiss.first().click()
+      dismissedAny = true
+    }
   }
   return dismissedAny
 }
