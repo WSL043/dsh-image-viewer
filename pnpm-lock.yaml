@@ -12,17 +12,17 @@ importers:
         specifier: 4.0.4
         version: 4.0.4
       '@deepseek-ai/dsh-client-locale':
-        specifier: 0.2.1-alpha.4
-        version: 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.4)
+        specifier: 0.2.1-alpha.5
+        version: 0.2.1-alpha.5(@deepseek-ai/cordis@4.0.4)
       '@deepseek-ai/dsh-client-ui-layout':
-        specifier: 0.2.1-alpha.4
-        version: 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.4)
+        specifier: 0.2.1-alpha.5
+        version: 0.2.1-alpha.5(@deepseek-ai/cordis@4.0.4)
       '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: 0.2.1-alpha.4
-        version: 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.4)
+        specifier: 0.2.1-alpha.5
+        version: 0.2.1-alpha.5(@deepseek-ai/cordis@4.0.4)
       '@deepseek-ai/dsh-client-ui-slots':
-        specifier: 0.2.1-alpha.4
-        version: 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.4)
+        specifier: 0.2.1-alpha.5
+        version: 0.2.1-alpha.5(@deepseek-ai/cordis@4.0.4)
       playwright:
         specifier: 1.63.0
         version: 1.63.0
@@ -56,23 +56,23 @@ packages:
   '@deepseek-ai/cosmokit@1.8.6-alpha.2':
     resolution: {integrity: sha512-FcxdMUal80CeFURh3lPYsw9TPDMVSGpovWnA3JtTGrBG15XFli4k38z1Egso1lgvifKpIW4Hx42X6UTelLEOAA==}
 
-  '@deepseek-ai/dsh-client-locale@0.2.1-alpha.4':
-    resolution: {integrity: sha512-w21/mwPdWLuL74NN49AoO3TueU39OBIL8/lPK6y/IC1o3MLF/gz6vZWBABx6sAAgUeEkHcRkB7bX40zTWzsTKA==}
+  '@deepseek-ai/dsh-client-locale@0.2.1-alpha.5':
+    resolution: {integrity: sha512-3k0IOZviWHefsfLmI3ZZbtbLyGuXeMMygCvEyTJXyedz+ZjvWyipWjOU+xXW1tkqUaJuOXKtsrpZdD0uZOMuJw==}
     peerDependencies:
       '@deepseek-ai/cordis': ~4.0.5-alpha.2
 
-  '@deepseek-ai/dsh-client-ui-layout@0.2.1-alpha.4':
-    resolution: {integrity: sha512-wpdkYu2PPpjgXrGhSu2CF+CET7KHrmjWUHu6h9fi/6mT6cPBrecHhKIOY9vkzxSuKxQFifJW35JPPXSNoK9rPA==}
+  '@deepseek-ai/dsh-client-ui-layout@0.2.1-alpha.5':
+    resolution: {integrity: sha512-ZmgpYtdaGCse5CP+aNJm8hlKDxvDnuA4YD1+R7OqcxE3hMpQHI9mZxygZ05g1D7Cn3NSSA0uSyqrW6gZR/NM9g==}
     peerDependencies:
       '@deepseek-ai/cordis': ~4.0.5-alpha.2
 
-  '@deepseek-ai/dsh-client-ui-primitives@0.2.1-alpha.4':
-    resolution: {integrity: sha512-nHzG2k7l8UuNG2rcIkzny1ko/fn/mQjiWrSh6wIe6X9d/qQi55Tdo87N3usmwce1akcZrvsXQ27v451tC1gzwA==}
+  '@deepseek-ai/dsh-client-ui-primitives@0.2.1-alpha.5':
+    resolution: {integrity: sha512-cgkd0BPKcHY5kT0Fj8zSAG0Uin/37vyw9xJOwZQrL6xVtYXQUZWFcxWFNM5/YK7sZ7pv6mZh2hbauzIylBj5Xw==}
     peerDependencies:
       '@deepseek-ai/cordis': ~4.0.5-alpha.2
 
-  '@deepseek-ai/dsh-client-ui-slots@0.2.1-alpha.4':
-    resolution: {integrity: sha512-DmeVkarwKGrjGBGS1k1kMvYBnzTKifq/hpd4JYnnYlETrVo3KaF2ZAL+6EtuWqCqRqdoSkP/MeWo9pxC1WvFCA==}
+  '@deepseek-ai/dsh-client-ui-slots@0.2.1-alpha.5':
+    resolution: {integrity: sha512-0cSukUOpbcfcD19DgTtJyFdWSGenF3Gwt1yJsqN7H3SaBVnsc+Dt1aUwENanotB7bRr3RW0bin46v+24cG16WA==}
     peerDependencies:
       '@deepseek-ai/cordis': ~4.0.5-alpha.2
 
@@ -526,20 +526,20 @@ snapshots:
 
   '@deepseek-ai/cosmokit@1.8.6-alpha.2': {}
 
-  '@deepseek-ai/dsh-client-locale@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.4)':
+  '@deepseek-ai/dsh-client-locale@0.2.1-alpha.5(@deepseek-ai/cordis@4.0.4)':
     dependencies:
       '@deepseek-ai/cordis': 4.0.4
       '@deepseek-ai/schemastery': 3.18.5-alpha.2
 
-  '@deepseek-ai/dsh-client-ui-layout@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.4)':
+  '@deepseek-ai/dsh-client-ui-layout@0.2.1-alpha.5(@deepseek-ai/cordis@4.0.4)':
     dependencies:
       '@deepseek-ai/cordis': 4.0.4
 
-  '@deepseek-ai/dsh-client-ui-primitives@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.4)':
+  '@deepseek-ai/dsh-client-ui-primitives@0.2.1-alpha.5(@deepseek-ai/cordis@4.0.4)':
     dependencies:
       '@deepseek-ai/cordis': 4.0.4
 
-  '@deepseek-ai/dsh-client-ui-slots@0.2.1-alpha.4(@deepseek-ai/cordis@4.0.4)':
+  '@deepseek-ai/dsh-client-ui-slots@0.2.1-alpha.5(@deepseek-ai/cordis@4.0.4)':
     dependencies:
       '@deepseek-ai/cordis': 4.0.4
 
