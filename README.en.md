@@ -39,13 +39,13 @@ A lightweight viewer for zooming, browsing, downloading, and annotating images a
 2. Paste this line into **Package name or address**, then select Install:
 
 ```text
-dsh-image-viewer@0.1.12
+dsh-image-viewer@0.1.13
 ```
 
 3. Follow the result shown on the page; refresh or restart only when requested.
 
 <!-- dsh-compatibility -->
-**Version 0.1.12 supports DSH cores `0.2.1-alpha.5`, `0.2.1-alpha.4`, and `0.2.0-rc.2`.**
+**Version 0.1.13 supports DSH cores `0.2.1-rc.1`, `0.2.1-alpha.5`, and `0.2.1-alpha.4`.**
 <!-- /dsh-compatibility -->
 
 ### Terminal (optional)
@@ -53,8 +53,8 @@ dsh-image-viewer@0.1.12
 For official DSH Desktop, install its bundled command through **Manage dsh Command…**; after initialization, fully quit the app before using `--profile desktop`. DSH-Portable 0.x and the Web profile use `--profile web`.
 
 ```sh
-dsh plugin --profile desktop add dsh-image-viewer@0.1.12
-dsh plugin --profile web add dsh-image-viewer@0.1.12
+dsh plugin --profile desktop add dsh-image-viewer@0.1.13
+dsh plugin --profile web add dsh-image-viewer@0.1.13
 ```
 
 After a terminal operation, restart the corresponding profile as prompted by the host.
