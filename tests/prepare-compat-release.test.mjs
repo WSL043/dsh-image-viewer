@@ -11,6 +11,7 @@ import {
   rewriteCompatibilityBlock,
   rewriteReleaseAgeCohort,
   selectLatestDshVersions,
+  supportedCores,
 } from '../scripts/prepare-compat-release.mjs'
 
 const targets = ['0.2.0-rc.2', '0.2.0-rc.1', '0.1.7-rc.2']
@@ -102,4 +103,26 @@ test('the release-age cohort covers every official @deepseek-ai package released
   assert.match(rewritten, /- '@deepseek-ai\/cosmokit@1\.8\.6-alpha\.1'/u)
   assert.match(rewritten, /- 'other@1\.0\.0'/u)
   assert.doesNotMatch(rewritten, /cordis@4\.0\.1/u)
+})
+
+test('a core bundled by a shipped DSH-Portable stays in the peer range after it leaves the newest three', () => {
+  const state = fixture()
+  state.compatibility.portableBaselines = ['0.1.5-rc.2']
+  const update = planCompatibilityUpdate(state, targets)
+  const range = [...targets, '0.1.5-rc.2'].join(' || ')
+  assert.equal(update.manifest.peerDependencies['@deepseek-ai/dsh-client-locale'], range)
+  assert.deepEqual(update.compatibility.releaseTargets, targets)
+  assert.deepEqual(supportedCores(targets, ['0.1.5-rc.2', targets[0]]), [...targets, '0.1.5-rc.2'])
+})
+
+test('unchanged targets still republish when the peers omit a bundled baseline', () => {
+  const state = fixture()
+  state.compatibility = { ...state.compatibility, releaseTargets: targets, portableBaselines: ['0.1.5-rc.2'] }
+  state.manifest.peerDependencies = { ...state.manifest.peerDependencies, '@deepseek-ai/dsh-client-locale': targets.join(' || ') }
+  assert.notEqual(planCompatibilityUpdate(state, targets), null)
+  state.manifest.peerDependencies['@deepseek-ai/dsh-client-locale'] = [...targets, '0.1.5-rc.2'].join(' || ')
+  for (const name of Object.keys(state.manifest.peerDependencies)) {
+    if (name.startsWith('@deepseek-ai/dsh-')) state.manifest.peerDependencies[name] = [...targets, '0.1.5-rc.2'].join(' || ')
+  }
+  assert.equal(planCompatibilityUpdate(state, targets), null)
 })

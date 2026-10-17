@@ -22,7 +22,9 @@ test('declares one optional web client plugin', async () => {
   assert.ok(pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-layout'))
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
   assert.ok(pkg.files.includes('compatibility.json'))
-  const range = compatibility.releaseTargets.join(' || ')
+  const baselines = compatibility.portableBaselines ?? []
+  assert.deepEqual(baselines, ['0.2.0-rc.2'], 'the DSH-Portable bundled core must stay supported')
+  const range = [...compatibility.releaseTargets, ...baselines.filter(version => !compatibility.releaseTargets.includes(version))].join(' || ')
   assert.deepEqual(compatibility.testFixtures.historicalSupported, ['0.1.1-rc.2', '0.1.2-rc.1'])
   assert.deepEqual(compatibility.testFixtures.historicalPreviews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1', '0.1.7-alpha.2', '0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.2'])
   // The compatibility autopilot moves these with each core release; only their shape is fixed here.
@@ -138,7 +140,7 @@ test('release is gated by checks, an immutable draft, and version-appropriate ch
   assert.match(ci, /Official DSH end-to-end acceptance/u)
   assert.match(ci, /accept-official-release\.ps1/u)
   assert.match(publish, /needs: official-dsh-acceptance/u)
-  assert.match(publish, /JSON\.stringify\(c\.releaseTargets\)/u)
+  assert.match(publish, /portableBaselines/u)
   assert.match(publish, /request_id:[\s\S]*compatibility/u)
   assert.match(publish, /Compatibility range now follows the official latest three DSH cores/u)
   assert.match(publish, /兼容范围改为官方最新 3 个 DSH 内核/u)
