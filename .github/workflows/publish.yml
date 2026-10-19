@@ -162,8 +162,8 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "${RELEASE_KIND:-feature}" == compatibility ]]; then
-            NOTES_EN='Compatibility range now follows the official latest three DSH cores; no functionality changes.'
-            NOTES_ZH='兼容范围改为官方最新 3 个 DSH 内核；功能无变化。'
+            NOTES_EN='Compatibility range now follows the official latest five DSH cores; no functionality changes.'
+            NOTES_ZH='兼容范围改为官方最新 5 个 DSH 内核；功能无变化。'
           else
             test -n "${NOTES_EN:-}"
             test -n "${NOTES_ZH:-}"
