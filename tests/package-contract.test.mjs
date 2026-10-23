@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { selectLatestDshVersions } from '../scripts/prepare-compat-release.mjs'
 const root = new URL('../', import.meta.url)
 
 test('official DSH acceptance allows only the reviewed pnpm build dependencies', async () => {
@@ -28,7 +29,8 @@ test('declares one optional web client plugin', async () => {
   assert.deepEqual(compatibility.testFixtures.historicalSupported, ['0.1.1-rc.2', '0.1.2-rc.1'])
   assert.deepEqual(compatibility.testFixtures.historicalPreviews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1', '0.1.7-alpha.2', '0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.2'])
   // The compatibility autopilot moves these with each core release; only their shape is fixed here.
-  assert.equal(compatibility.releaseTargets.length, 3)
+  assert.deepEqual(compatibility.releaseTargets,
+    selectLatestDshVersions(compatibility.releaseTargets, compatibility.releaseTargets.length))
   assert.equal(compatibility.supported, undefined)
   assert.equal(compatibility.previews, undefined)
   for (const [name, version] of Object.entries(pkg.peerDependencies)) {
