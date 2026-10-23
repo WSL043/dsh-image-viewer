@@ -1,4 +1,4 @@
-> Current release: dsh-image-viewer@0.1.15, qualified targets DSH 0.2.1-rc.2, 0.2.1-rc.1, 0.2.1-alpha.5.
+> Current release: dsh-image-viewer@0.1.16, qualified targets DSH 0.2.1-rc.3, 0.2.1-rc.2, 0.2.1-rc.1, 0.2.1-alpha.5, 0.2.1-alpha.4.
 
 # Agent installation guide
 
@@ -14,10 +14,10 @@ Use this guide only when the user asks to install, update, verify, or remove `ds
 
 ## Install or update
 
-For DSH 0.2.1-rc.2, 0.2.1-rc.1, and 0.2.1-alpha.5, use dsh-image-viewer@0.1.15 in **Plugins → Add plugin**. No other cores are claimed by this release.
+For DSH 0.2.1-rc.3, 0.2.1-rc.2, 0.2.1-rc.1, 0.2.1-alpha.5, and 0.2.1-alpha.4, use dsh-image-viewer@0.1.16 in **Plugins → Add plugin**. No other cores are claimed by this release.
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.15
+dsh plugin --profile web add dsh-image-viewer@0.1.16
 ```
 
 DSH-Portable exposes the same standard `dsh plugin` command. Do not use a private executable path in public instructions.
