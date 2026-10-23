@@ -14,7 +14,7 @@ import {
   supportedCores,
 } from '../scripts/prepare-compat-release.mjs'
 
-const targets = ['0.2.0-rc.2', '0.2.0-rc.1', '0.1.7-rc.2']
+const targets = ['0.2.0-rc.2', '0.2.0-rc.1', '0.1.7-rc.2', '0.1.7-rc.1', '0.1.7-alpha.2']
 
 const fixture = () => ({
   compatibility: {
@@ -38,19 +38,22 @@ const fixture = () => ({
   },
 })
 
-test('selects the semver-newest three across alpha, rc, and final versions', () => {
+test('selects the semver-newest five across alpha, rc, and final versions', () => {
   const versions = [
     '0.2.0-rc.1', '0.1.7-rc.2', '0.2.0-alpha.2', '0.2.0-rc.2',
     '0.2.0-beta.1', '0.2.0', '0.3.0-alpha.1', 'not-semver',
   ]
-  assert.deepEqual(selectLatestDshVersions(versions), ['0.3.0-alpha.1', '0.2.0', '0.2.0-rc.2'])
+  assert.deepEqual(selectLatestDshVersions(versions), ['0.3.0-alpha.1', '0.2.0', '0.2.0-rc.2', '0.2.0-rc.1', '0.2.0-beta.1'])
   assert.ok(compareDshVersions('0.2.0', '0.2.0-rc.10') > 0)
   assert.ok(compareDshVersions('0.2.0-rc.10', '0.2.0-rc.9') > 0)
-  assert.throws(() => selectLatestDshVersions(['0.2.0-rc.1', '0.2.0']), /fewer than 3/u)
-  assert.deepEqual(selectLatestDshVersions(['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.2.1-alpha.3']), ['0.2.1-alpha.3', '0.2.1-alpha.2', '0.2.0-rc.2'])
+  assert.throws(() => selectLatestDshVersions(['0.2.0-rc.1', '0.2.0']), /fewer than 5/u)
+  assert.deepEqual(selectLatestDshVersions(['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.2.1-alpha.3', '0.2.1-alpha.4', '0.2.1-alpha.5']),
+    ['0.2.1-alpha.5', '0.2.1-alpha.4', '0.2.1-alpha.3', '0.2.0-rc.2', '0.2.0-rc.1'], 'two release candidates always stay in the window')
+  assert.deepEqual(selectLatestDshVersions(['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.2.1-alpha.3', '0.2.1-alpha.4', '0.2.1-alpha.5']),
+    ['0.2.1-alpha.5', '0.2.1-alpha.4', '0.2.1-alpha.3', '0.2.1-alpha.2', '0.2.0-rc.2'], 'a single release candidate is all there is to keep')
 })
 
-test('moves history to test fixtures and generates a peer range with only the top three', () => {
+test('moves history to test fixtures and generates a peer range with only the core window', () => {
   const state = fixture()
   const update = planCompatibilityUpdate(state, targets)
   assert.equal(update.pluginVersion, '0.1.6')
@@ -67,7 +70,7 @@ test('moves history to test fixtures and generates a peer range with only the to
   assert.equal(update.manifest.devDependencies['@deepseek-ai/dsh-client-ui-layout'], targets[0])
   assert.equal(planCompatibilityUpdate({ ...state, compatibility: { ...state.compatibility, releaseTargets: targets } }, targets), null)
   assert.throws(() => planCompatibilityUpdate(state, [...targets].reverse()), /descending semver order/u)
-  assert.throws(() => planCompatibilityUpdate(state, targets.slice(0, 2)), /newest three/u)
+  assert.throws(() => planCompatibilityUpdate(state, targets.slice(0, 2)), /newest 5/u)
 })
 
 test('the cordis peer admits the exact host each target core ships, including prereleases', () => {
@@ -85,11 +88,11 @@ test('rewrites README and Agent installation compatibility text without historic
   const zh = rewriteCompatibilityBlock('**版本 0.1.5 支持 DSH 内核 `old`。**', '0.1.6', targets, 'zh')
   const en = rewriteCompatibilityBlock('**Version 0.1.5 supports DSH cores `old`.**', '0.1.6', targets, 'en')
   const agents = rewriteAgentCompatibility('> Current release: dsh-image-viewer@0.1.5, qualified targets DSH old.\nFor DSH old use dsh-image-viewer@0.1.5.', '0.1.6', targets)
-  assert.match(zh, /<!-- dsh-compatibility -->[\s\S]*0\.2\.0-rc\.2[\s\S]*0\.2\.0-rc\.1[\s\S]*0\.1\.7-rc\.2/u)
-  assert.match(en, /<!-- dsh-compatibility -->[\s\S]*0\.2\.0-rc\.2[\s\S]*0\.2\.0-rc\.1[\s\S]*0\.1\.7-rc\.2/u)
+  assert.match(zh, /<!-- dsh-compatibility -->[\s\S]*0\.2\.0-rc\.2[\s\S]*0\.2\.0-rc\.1[\s\S]*0\.1\.7-rc\.2[\s\S]*0\.1\.7-alpha\.2/u)
+  assert.match(en, /<!-- dsh-compatibility -->[\s\S]*0\.2\.0-rc\.2[\s\S]*0\.2\.0-rc\.1[\s\S]*0\.1\.7-rc\.2[\s\S]*and `0\.1\.7-alpha\.2`/u)
   assert.match(agents, /Current release: dsh-image-viewer@0\.1\.6/u)
-  assert.match(agents, /For DSH 0\.2\.0-rc\.2, 0\.2\.0-rc\.1, and 0\.1\.7-rc\.2/u)
-  assert.doesNotMatch(agents, /historical package|0\.1\.7-alpha\.1/u)
+  assert.match(agents, /For DSH 0\.2\.0-rc\.2, 0\.2\.0-rc\.1, 0\.1\.7-rc\.2, 0\.1\.7-rc\.1, and 0\.1\.7-alpha\.2/u)
+  assert.doesNotMatch(agents, /historical package|0\.1\.7-alpha\.1\b/u)
 })
 
 test('the release-age cohort covers every official @deepseek-ai package released with a core', () => {
@@ -105,7 +108,7 @@ test('the release-age cohort covers every official @deepseek-ai package released
   assert.doesNotMatch(rewritten, /cordis@4\.0\.1/u)
 })
 
-test('a core bundled by a shipped DSH-Portable stays in the peer range after it leaves the newest three', () => {
+test('a core bundled by a shipped DSH-Portable stays in the peer range after it leaves the core window', () => {
   const state = fixture()
   state.compatibility.portableBaselines = ['0.1.5-rc.2']
   const update = planCompatibilityUpdate(state, targets)
