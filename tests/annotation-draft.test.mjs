@@ -1,10 +1,176 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { NativeImageViewerService } from '../src/viewer.js'
-import { createAnnotationCommit, currentSessionId } from '../src/annotation-draft.js'
+import { createAnnotationCommit, currentSessionId, renderAnnotationImage } from '../src/annotation-draft.js'
 
 const annotations = [{ id: 'note', x: .3, y: .4, note: 'change this' }]
 const item = { id: 'image', src: 'blob:example', name: 'sample.png' }
+
+const deferred = () => {
+  let resolve, reject
+  const promise = new Promise((done, fail) => { resolve = done; reject = fail })
+  return { promise, resolve, reject }
+}
+
+const draftHost = () => {
+  const writes = []
+  const input = {
+    state: { getSnapshot: () => ({ phase: 'plain', draft: 'Existing text' }) },
+    addAttachments: ids => { writes.push(['attachments', ids]); return true },
+    setDraft: text => { writes.push(['text', text]) },
+  }
+  const conversation = {
+    input: { for: () => input },
+    createDrafts: (_session, files) => { writes.push(['files', files]); return files.map((_, index) => ({ id: `attachment-${index}` })) },
+    releaseDraftAttachments: () => assert.fail('no attachment should need release'),
+  }
+  const sessions = { list: { getSnapshot: () => ({ current: 'session' }) }, scope: id => id }
+  return { ctx: { get: key => key === 'sessions' ? sessions : conversation }, input, writes }
+}
+
+test('prepares gallery annotations sequentially and keeps attachment and note order', async () => {
+  const { ctx, writes } = draftHost()
+  const gates = [deferred(), deferred()], started = [deferred(), deferred()]
+  const reads = []
+  let renders = 0, active = 0, peak = 0
+  const controller = new AbortController()
+  const commit = createAnnotationCommit(ctx, {
+    readBlob: async (src, { signal }) => {
+      assert.equal(signal, controller.signal)
+      reads.push(src)
+      return new Blob([src])
+    },
+    render: async (blob, _notes, { signal }) => {
+      assert.equal(signal, controller.signal)
+      const index = renders++
+      peak = Math.max(peak, ++active)
+      started[index].resolve()
+      await gates[index].promise
+      active--
+      return blob
+    },
+    formatNotes: notes => notes[0].note,
+  })
+  const saving = commit([
+    { item, annotations },
+    { item: { ...item, src: 'blob:second', name: 'second.png' }, annotations },
+  ], { signal: controller.signal })
+  await started[0].promise
+  assert.deepEqual(reads, [item.src])
+  assert.deepEqual(writes, [])
+  gates[0].resolve()
+  await started[1].promise
+  assert.equal(peak, 1)
+  gates[1].resolve()
+  await saving
+  assert.deepEqual(writes[0][1].map(file => file.name), ['sample-annotated.png', 'second-annotated.png'])
+  assert.match(writes[2][1], /^Existing text\n\nsample-annotated.png\nchange this\n\nsecond-annotated.png\nchange this$/)
+})
+
+for (const stage of ['read', 'render']) test(`cancelling during ${stage} prevents later work and all draft writes even when the provider finishes late`, async () => {
+  const { ctx, writes } = draftHost()
+  const gate = deferred(), started = deferred(), controller = new AbortController()
+  let reads = 0, renders = 0
+  const commit = createAnnotationCommit(ctx, {
+    readBlob: async () => {
+      reads++
+      if (stage === 'read') { started.resolve(); await gate.promise }
+      return new Blob(['source'])
+    },
+    render: async blob => {
+      renders++
+      if (stage === 'render') { started.resolve(); await gate.promise }
+      return blob
+    },
+    formatNotes: () => 'notes',
+  })
+  const saving = commit([{ item, annotations }, { item: { ...item, id: 'other' }, annotations }], { signal: controller.signal })
+  await started.promise
+  controller.abort()
+  gate.resolve()
+  await assert.rejects(saving, { name: 'AbortError' })
+  assert.equal(reads, 1)
+  assert.equal(renders, stage === 'render' ? 1 : 0)
+  assert.deepEqual(writes, [])
+})
+
+test('last cancellation check precedes the synchronous attachment and draft boundary', async () => {
+  const { ctx, input, writes } = draftHost()
+  const controller = new AbortController()
+  input.state.getSnapshot = () => { controller.abort(); return { phase: 'plain', draft: 'Existing text' } }
+  const commit = createAnnotationCommit(ctx, {
+    readBlob: async () => new Blob(['source']), render: async blob => blob, formatNotes: () => 'notes',
+  })
+  await assert.rejects(commit([{ item, annotations }], { signal: controller.signal }), { name: 'AbortError' })
+  assert.deepEqual(writes, [])
+})
+
+for (const outcome of ['success', 'cancel', 'canvas-error']) test(`annotation ${outcome} releases the bitmap and canvas backing store`, async () => {
+  const previousBitmap = globalThis.createImageBitmap, previousDocument = globalThis.document
+  let closed = 0
+  const controller = new AbortController()
+  const canvas = {
+    width: 0, height: 0,
+    getContext: () => outcome === 'canvas-error' ? null : { drawImage() {} },
+    toBlob: callback => { if (outcome === 'cancel') controller.abort(); callback(new Blob(['png'])) },
+  }
+  globalThis.createImageBitmap = async () => ({ width: 1024, height: 768, close: () => { closed++ } })
+  globalThis.document = { createElement: () => canvas }
+  try {
+    const rendering = renderAnnotationImage(new Blob(['source']), [], { signal: controller.signal })
+    if (outcome === 'success') assert.equal((await rendering).size, 3)
+    else await assert.rejects(rendering, outcome === 'cancel' ? { name: 'AbortError' } : /Canvas unavailable/)
+    assert.equal(closed, 1)
+    assert.equal(canvas.width, 0)
+    assert.equal(canvas.height, 0)
+  } finally {
+    if (previousBitmap === undefined) delete globalThis.createImageBitmap
+    else globalThis.createImageBitmap = previousBitmap
+    if (previousDocument === undefined) delete globalThis.document
+    else globalThis.document = previousDocument
+  }
+})
+
+for (const outcome of ['resolve', 'reject']) test(`cancelled close cannot ${outcome} into a reopened gallery`, async () => {
+  const service = new NativeImageViewerService(), gate = deferred()
+  let signal, commits = 0
+  service.open({ items: [item], commitAnnotations: (_entries, options) => { commits++; signal = options.signal; return gate.promise } })
+  service.setAnnotations(item.id, annotations)
+  const closing = service.close(), duplicate = service.close()
+  assert.equal(commits, 1)
+  assert.equal(service.getSnapshot().committing, true)
+  await service.close({ discard: true })
+  assert.equal(signal.aborted, true)
+  assert.equal(service.getSnapshot(), undefined)
+  assert.deepEqual(service.getAnnotationsSnapshot()[item.id], annotations)
+  assert.equal(service.open({ items: [{ src: 'blob:new' }] }), true)
+  const reopened = service.getSnapshot()
+  if (outcome === 'resolve') gate.resolve()
+  else gate.reject(Error('late failure'))
+  await Promise.all([closing, duplicate])
+  assert.equal(service.getSnapshot(), reopened)
+})
+
+test('disposal aborts pending annotation reads and prevents draft writes or reopening', async () => {
+  const { ctx, writes } = draftHost(), gate = deferred(), started = deferred()
+  const service = new NativeImageViewerService()
+  let signal
+  service.open({ items: [item], commitAnnotations: createAnnotationCommit(ctx, {
+    readBlob: async (_src, options) => { signal = options.signal; started.resolve(); await gate.promise; return new Blob(['source']) },
+    render: async () => assert.fail('disposed work must not render'), formatNotes: () => 'notes',
+  }) })
+  service.setAnnotations(item.id, annotations)
+  const closing = service.close()
+  await started.promise
+  service.dispose()
+  service.dispose()
+  assert.equal(signal.aborted, true)
+  assert.equal(service.getSnapshot(), undefined)
+  assert.equal(service.open({ items: [item] }), false)
+  gate.resolve()
+  await closing
+  assert.deepEqual(writes, [])
+})
 
 test('currentSessionId supports legacy current and alpha2 retained main view selection', () => {
   assert.equal(currentSessionId({ current: 'legacy', byId: {} }), 'legacy')

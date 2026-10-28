@@ -49,7 +49,8 @@ export class NativeImageViewerService {
   #snapshot
   #annotationsByImage = new Map()
   #openingAnnotations = new Map()
-  #closing = false
+  #closeOperation
+  #disposed = false
 
   constructor() {
     this.subscribe = listener => {
@@ -63,13 +64,14 @@ export class NativeImageViewerService {
   }
 
   setAnnotations(imageId, annotations) {
+    if (this.#disposed) return
     if (typeof imageId !== 'string' || imageId === '' || !Array.isArray(annotations)) return
     if (annotations.length === 0) this.#annotationsByImage.delete(imageId)
     else this.#annotationsByImage.set(imageId, annotations.map(annotation => ({ ...annotation })))
   }
 
   open(request) {
-    if (this.#closing) return false
+    if (this.#disposed || this.#closeOperation) return false
     const normalized = normalizeViewerRequest(request)
     if (normalized === undefined) return false
     this.#revision += 1
@@ -81,27 +83,67 @@ export class NativeImageViewerService {
 
   async close({ discard = false } = {}) {
     if (this.#snapshot === undefined) return
-    if (this.#closing) return
-    const pending = this.#snapshot.items.map(item => ({ item, annotations: this.#annotationsByImage.get(item.id) || [] }))
-      .filter(({ item, annotations }) => annotations.some(note => note.note.trim()) && JSON.stringify(annotations) !== this.#openingAnnotations.get(item.id))
-    if (!discard && pending.length && this.#snapshot.commitAnnotations) {
-      this.#closing = true
-      this.#snapshot = { ...this.#snapshot, committing: true, commitError: false }
-      this.#emit()
-      try { await this.#snapshot.commitAnnotations(pending) }
-      catch {
-        this.#snapshot = { ...this.#snapshot, committing: false, commitError: true }
-        this.#closing = false
-        this.#emit()
-        return false
-      }
-      this.#closing = false
+    if (discard) {
+      const request = this.#snapshot
+      this.#cancelCommit()
+      this.#dismiss(request)
+      return true
     }
-    const opener = this.#snapshot.opener
+    if (this.#closeOperation) return this.#closeOperation.promise
+    const request = this.#snapshot
+    const pending = request.items.map(item => ({ item, annotations: this.#annotationsByImage.get(item.id) || [] }))
+      .filter(({ item, annotations }) => annotations.some(note => note.note.trim()) && JSON.stringify(annotations) !== this.#openingAnnotations.get(item.id))
+    if (pending.length && request.commitAnnotations) {
+      const operation = { controller: new AbortController() }
+      this.#closeOperation = operation
+      this.#snapshot = { ...request, committing: true, commitError: false }
+      this.#emit()
+      operation.promise = this.#commitAndClose(operation, request, pending)
+      return operation.promise
+    }
+    this.#dismiss(request)
+    return true
+  }
+
+  async #commitAndClose(operation, request, pending) {
+    try { await request.commitAnnotations(pending, { signal: operation.controller.signal }) }
+    catch {
+      if (this.#closeOperation !== operation) return false
+      this.#closeOperation = undefined
+      this.#snapshot = { ...request, committing: false, commitError: true }
+      this.#emit()
+      return false
+    }
+    if (this.#closeOperation !== operation) return false
+    this.#closeOperation = undefined
+    this.#dismiss(request)
+    return true
+  }
+
+  #cancelCommit() {
+    const operation = this.#closeOperation
+    this.#closeOperation = undefined
+    operation?.controller.abort()
+  }
+
+  dispose() {
+    if (this.#disposed) return
+    this.#disposed = true
+    this.#cancelCommit()
     this.#snapshot = undefined
     this.#emit()
-    if (typeof window === 'undefined') opener?.focus()
-    else window.requestAnimationFrame(() => { opener?.focus() })
+    this.#listeners.clear()
+  }
+
+  #dismiss(request) {
+    if (this.#snapshot?.revision !== request.revision) return
+    this.#snapshot = undefined
+    this.#emit()
+    const restoreFocus = () => {
+      if (!this.#disposed && this.#snapshot === undefined && this.#revision === request.revision && request.opener?.isConnected !== false) request.opener?.focus()
+    }
+    if (typeof window === 'undefined') restoreFocus()
+    else window.requestAnimationFrame(restoreFocus)
   }
 
   #emit() {

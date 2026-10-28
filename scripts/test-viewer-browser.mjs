@@ -779,6 +779,85 @@ try {
   assert.deepEqual([draftEvidence.width, draftEvidence.height], [640, 480])
   assert.equal(draftEvidence.ids.length, 1)
   checks.push('native image click, annotation, close, rendered PNG and notes enter existing draft without send')
+
+  // Browser fixture, not an official DSH host: use the existing native-click
+  // bridge and a real textarea, with only the source read held behind a gate.
+  await page.evaluate(() => {
+    const makeButton = (id, name, color) => {
+      const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 480
+      const paint = canvas.getContext('2d'); paint.fillStyle = color; paint.fillRect(0, 0, 640, 480)
+      const button = document.createElement('button'); button.id = id; button.dataset.variant = 'single'
+      const img = document.createElement('img'); img.src = canvas.toDataURL(); img.alt = name; img.style.width = '100px'
+      button.append(img); document.body.append(button)
+      return img.src
+    }
+    const slowSource = makeButton('annotation-cancel-intake', 'cancel-source.png', '#518658')
+    makeButton('annotation-after-cancel', 'after-cancel.png', '#765189')
+    const draft = document.createElement('textarea'); draft.id = 'annotation-cancel-draft'
+    draft.value = 'Existing draft stays unchanged'; document.body.append(draft)
+    const state = window.__annotationCancel = { started: false, finished: false, aborted: false, mutations: 0 }
+    const input = {
+      state: { getSnapshot: () => ({ phase: 'plain', draft: draft.value }) },
+      setDraft: text => { state.mutations++; draft.value = text },
+      addAttachments: () => { state.mutations++; return true },
+    }
+    const conversation = {
+      input: { for: () => input },
+      createDrafts: (_session, files) => { state.mutations++; return files.map((_, i) => ({ id: `cancel-attachment-${i}` })) },
+      releaseDraftAttachments: () => { state.mutations++ },
+    }
+    const sessions = { list: { getSnapshot: () => ({ current: 'fixture-cancel' }) }, scope: id => id }
+    window.__viewerContext.get = key => key === 'sessions' ? sessions : conversation
+    const originalFetch = window.fetch
+    state.restoreFetch = () => { window.fetch = originalFetch }
+    window.fetch = async (src, options) => {
+      if (String(src) !== slowSource) return originalFetch.call(window, src, options)
+      state.started = true
+      options.signal.addEventListener('abort', () => { state.aborted = true }, { once: true })
+      await new Promise(resolveRead => { state.finish = resolveRead })
+      // Deliberately ignore cancellation here to model a provider settling late.
+      const response = await originalFetch.call(window, src)
+      state.finished = true
+      return response
+    }
+  })
+  await page.locator('#annotation-cancel-intake').click()
+  await waitReady()
+  await page.getByRole('button', { name: 'Mark region', exact: true }).click()
+  await page.locator('.niv-image').click({ position: { x: 180, y: 150 } })
+  await page.locator('.niv-inline-note textarea').fill('Keep this note after cancellation')
+  await page.locator('.niv-close-floating').click()
+  await page.waitForFunction(() => window.__annotationCancel.started)
+  const cancelIntake = page.locator('.niv-draft-status button')
+  await cancelIntake.waitFor({ state: 'visible' })
+  assert.equal(await page.locator('#annotation-cancel-draft').inputValue(), 'Existing draft stays unchanged')
+  assert.equal(await page.evaluate(() => window.__annotationCancel.mutations), 0)
+  // Focus and activate the real cancellation button, exercising its keyboard path.
+  await cancelIntake.focus()
+  await page.keyboard.press('Enter')
+  await page.locator('.niv-root').waitFor({ state: 'hidden' })
+  assert.deepEqual(await page.evaluate(() => {
+    const { aborted, finished, mutations } = window.__annotationCancel
+    return { aborted, finished, mutations }
+  }), { aborted: true, finished: false, mutations: 0 })
+  await page.locator('#annotation-after-cancel').click()
+  await waitReady()
+  await page.evaluate(() => { window.__annotationCancel.finish() })
+  await page.waitForFunction(() => window.__annotationCancel.finished)
+  await page.evaluate(async () => { await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame) })
+  assert.equal(await page.locator('.niv-root').count(), 1)
+  assert.equal(await page.locator('.niv-title strong').textContent(), 'after-cancel.png')
+  assert.equal(await page.locator('#annotation-cancel-draft').inputValue(), 'Existing draft stays unchanged')
+  assert.equal(await page.evaluate(() => window.__annotationCancel.mutations), 0)
+  await page.evaluate(() => { window.__annotationCancel.restoreFetch() })
+  await close()
+  await page.locator('#annotation-cancel-intake').click()
+  await waitReady()
+  await page.getByRole('button', { name: 'Region 1', exact: true }).click()
+  assert.equal(await page.locator('.niv-inline-note textarea').inputValue(), 'Keep this note after cancellation')
+  await page.locator('.niv-close-floating').click()
+  await page.locator('.niv-root').waitFor({ state: 'hidden' })
+  checks.push('browser fixture: native clicks and keyboard cancel a pending annotation read before completion; late completion preserves the reopened gallery, existing draft and region note')
   assert.deepEqual(pageErrors, [])
   const result = { ok: true, checks }
   await writeFile(join(evidence, 'viewer-browser-result.json'), `${JSON.stringify(result)}\n`, 'utf8')
