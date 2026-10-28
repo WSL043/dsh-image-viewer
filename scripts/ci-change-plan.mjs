@@ -1,4 +1,6 @@
-import { appendFileSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 
 function argument(name) {
@@ -7,11 +9,11 @@ function argument(name) {
 }
 
 function git(...args) {
-  return execFileSync('git', args, { encoding: 'utf8' }).trim()
+  return execFileSync('git', args, { encoding: 'utf8', cwd: dirname(dirname(fileURLToPath(import.meta.url))), windowsHide: true, shell: false }).trim()
 }
 
 function baseCommit(candidate) {
-  if (candidate && !/^0+$/u.test(candidate)) {
+  if (typeof candidate === 'string' && /^[0-9a-f]{40}$/u.test(candidate) && !/^0+$/u.test(candidate)) {
     try {
       git('rev-parse', '--verify', `${candidate}^{commit}`)
       return candidate
@@ -53,6 +55,14 @@ function compareVersions(left, right) {
   return 0
 }
 
+export function githubOutputOfPlan(plan) {
+  return ['behavior', 'delivery', 'demo', 'official', 'runtime'].map(key => {
+    if (typeof plan[key] !== 'boolean') throw new Error('change plan must contain booleans')
+    return key + '=' + plan[key] + '\n'
+  }).join('')
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 const base = baseCommit(argument('--base'))
 const publishedVersion = argument('--published')
 const packageVersion = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
@@ -78,7 +88,7 @@ const delivery = planner || changed([
   /^tests\/.*(?:contract|release|package|compat).*\.test\.(?:mjs|js)$/u,
 ])
 const behavior = planner || runtime || changed([
-  /^scripts\/test-viewer-browser\.mjs$/u,
+  /^scripts\/(?:test-viewer-browser|annotation-zoom-check|evidence-paths)\.mjs$/u,
   /^compatibility\.json$/u,
   /^package(?:-lock)?\.json$/u,
   /^pnpm-lock\.yaml$/u,
@@ -86,6 +96,7 @@ const behavior = planner || runtime || changed([
   /^tests\//u,
 ])
 const official = planner || runtime || changed([
+  /^scripts\/(?:accept-browser|evidence-paths)\.mjs$/u,
   /^compatibility\.json$/u,
   /^package\.json$/u,
   /^pnpm-lock\.yaml$/u,
@@ -99,7 +110,6 @@ if (runtime && publishedVersion && compareVersions(packageVersion, publishedVers
 }
 
 const plan = { behavior, delivery, demo, official, runtime }
-console.log(JSON.stringify({ base, files, packageVersion, publishedVersion, plan }, null, 2))
-if (process.env.GITHUB_OUTPUT) {
-  appendFileSync(process.env.GITHUB_OUTPUT, Object.entries(plan).map(([key, value]) => `${key}=${value}\n`).join(''))
+if (process.argv.includes('--github-output')) process.stdout.write(githubOutputOfPlan(plan))
+else console.log(JSON.stringify({ base, files, packageVersion, publishedVersion, plan }, null, 2))
 }

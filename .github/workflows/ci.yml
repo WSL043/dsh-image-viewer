@@ -31,7 +31,7 @@ jobs:
         shell: bash
         run: |
           published="$(npm view dsh-image-viewer dist-tags.latest)"
-          node scripts/ci-change-plan.mjs --base "$BASE_SHA" --published "$published"
+          node scripts/ci-change-plan.mjs --base "$BASE_SHA" --published "$published" --github-output >> "$GITHUB_OUTPUT"
       - id: versions
         run: node -e "const c=require('./compatibility.json'); require('fs').appendFileSync(process.env.GITHUB_OUTPUT,'dsh_versions='+JSON.stringify([...c.releaseTargets,...(c.portableBaselines||[]).filter(v=>!c.releaseTargets.includes(v))])+'\n')"
 
@@ -104,6 +104,9 @@ jobs:
       - run: pnpm exec playwright install chromium
       - name: Verify actual gallery, zoom, pan, notes, download and plugin lifecycle
         shell: pwsh
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
         run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .candidate/dsh-image-viewer-*.tgz).FullName -DshVersion '${{ matrix.dsh_version }}' -EvidenceRoot '${{ runner.temp }}/dsh-image-viewer-evidence'
       - uses: actions/upload-artifact@v7
         if: always()

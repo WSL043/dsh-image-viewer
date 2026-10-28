@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { prepareEvidenceDirectory, evidenceFile, writeEvidence } from './evidence-paths.mjs'
 import { chromium } from 'playwright'
 import { expect } from 'playwright/test'
 
@@ -73,8 +72,10 @@ async function dismissOfficialFirstRunOverlay(page) {
   }
 }
 
-const [url, evidence] = process.argv.slice(2)
-await mkdir(evidence, { recursive: true })
+const [url, requestedEvidence] = process.argv.slice(2)
+const target = new URL(url)
+assert.ok(target.protocol === 'http:' && target.hostname === '127.0.0.1' && target.port && !target.username && !target.password, 'official acceptance requires a loopback HTTP target')
+const evidence = await prepareEvidenceDirectory(requestedEvidence)
 const browser = await chromium.launch({ headless: true, channel: process.env.DSH_TEST_BROWSER_CHANNEL || undefined })
 const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
 const errors = []
@@ -137,7 +138,7 @@ try {
   await viewer.getByRole('button', { name: /^(Mark region|标记区域)$/ }).click()
   await viewer.locator('.niv-image').click()
   await viewer.locator('textarea').fill('Synthetic acceptance note')
-  await page.screenshot({ path: join(evidence, 'official-viewer-annotation.png') })
+  await page.screenshot({ path: await evidenceFile(evidence, 'official-viewer-annotation.png') })
   await viewer.getByRole('button', { name: /^(Remove region note|删除区域备注)$/ }).click()
   assert.equal(await viewer.locator('.niv-annotation').count(), 0)
   const downloaded = page.waitForEvent('download')
@@ -161,13 +162,13 @@ try {
   const draft = await input.innerText()
   assert.ok(draft.includes('Existing acceptance draft'), 'existing draft is preserved')
   assert.ok(draft.includes('Annotation returned to the original draft'), 'notes return to the composer')
-  await page.screenshot({ path: join(evidence, 'official-viewer-annotation-draft.png') })
+  await page.screenshot({ path: await evidenceFile(evidence, 'official-viewer-annotation-draft.png') })
   assert.deepEqual(errors, [])
   console.log(JSON.stringify({ ok: true, checks: ['official composer attachments', 'gallery index and navigation', 'zoom', 'pan', 'region note add/remove', 'download', 'escape and focus', 'annotation image and notes returned to draft', 'no page errors'] }))
 } catch (error) {
-  await page.screenshot({ path: join(evidence, 'browser-failure.png') }).catch(() => {})
-  await writeFile(join(evidence, 'browser-failure.html'), await page.content())
-  await writeFile(join(evidence, 'browser-errors.json'), JSON.stringify(errors))
+  await page.screenshot({ path: await evidenceFile(evidence, 'browser-failure.png') }).catch(() => {})
+  await writeEvidence(evidence, 'browser-failure.html', await page.content())
+  await writeEvidence(evidence, 'browser-errors.json', JSON.stringify(errors))
   throw error
 } finally {
   await browser.close()

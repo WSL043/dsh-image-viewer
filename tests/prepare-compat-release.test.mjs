@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   compareDshVersions,
+  fetchCordisHosts,
   extractDeepSeekReleaseAgeSelectors,
   planCompatibilityUpdate,
   cordisHostOf,
@@ -128,4 +129,22 @@ test('unchanged targets still republish when the peers omit a bundled baseline',
     if (name.startsWith('@deepseek-ai/dsh-')) state.manifest.peerDependencies[name] = [...targets, '0.1.5-rc.2'].join(' || ')
   }
   assert.equal(planCompatibilityUpdate(state, targets), null)
+})
+
+
+test('registry compatibility uses one fixed URL and rejects version path injection before requesting', async () => {
+  let calls = 0
+  const request = async (url, options) => {
+    calls++
+    assert.equal(url, 'https://registry.npmjs.org/@deepseek-ai%2fdsh')
+    assert.equal(options.redirect, 'error')
+    return { ok: true, json: async () => ({ name: '@deepseek-ai/dsh', versions: Object.fromEntries(targets.map(version => [version, { version, dependencies: { '@deepseek-ai/cordis': '~4.0.4' } }])) }) }
+  }
+  for (const bad of ['../other', 'https://127.0.0.1/private', '0.2.0-rc.1?target=other']) {
+    await assert.rejects(fetchCordisHosts([...targets.slice(0, 4), bad], request), /invalid DSH version/)
+  }
+  assert.equal(calls, 0)
+  assert.deepEqual(await fetchCordisHosts(targets, request), targets.map(() => '4.0.4'))
+  assert.equal(calls, 1)
+  await assert.rejects(fetchCordisHosts(targets, async () => ({ ok: true, json: async () => ({ name: '@deepseek-ai/dsh', versions: {} }) })), /missing exact DSH registry version/)
 })

@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
-import { writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { evidenceFile, writeEvidence } from './evidence-paths.mjs'
 
 export async function checkAnnotationZoom({ page, open, waitReady, normal, evidence }) {
   await open([{ id: 'annotation-zoom', src: normal, name: 'Annotation sharpness' }], 0, undefined, { annotations: true })
@@ -36,10 +35,10 @@ export async function checkAnnotationZoom({ page, open, waitReady, normal, evide
     measurements.push({ zoom, ...geometry, identicalPinPixels: pin.equals(firstPin), identicalNotePixels: note.equals(firstNote) })
     if (zoom === 1 || zoom === 8) {
       const bounds = await page.locator('.niv-pin').boundingBox()
-      await page.screenshot({ path: join(evidence, `annotation-${zoom}x.png`), clip: { x: Math.floor(bounds.x - 165), y: Math.floor(bounds.y - 100), width: 360, height: 160 } })
+      await page.screenshot({ path: await evidenceFile(evidence, `annotation-${zoom}x.png`), clip: { x: Math.floor(bounds.x - 165), y: Math.floor(bounds.y - 100), width: 360, height: 160 } })
     }
   }
-  await writeFile(join(evidence, 'annotation-zoom.json'), JSON.stringify(measurements, null, 2))
+  await writeEvidence(evidence, 'annotation-zoom.json', JSON.stringify(measurements, null, 2))
   for (const sample of measurements) {
     assert.equal(sample.scaledAncestor, false, 'annotations must not be composited inside the scaled image')
     assert.ok(Math.abs(sample.width - 24) < 0.01 && Math.abs(sample.height - 24) < 0.01)

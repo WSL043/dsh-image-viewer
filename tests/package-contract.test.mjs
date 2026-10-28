@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { evidenceLocation, evidenceFile, prepareEvidenceDirectory, writeEvidence } from '../scripts/evidence-paths.mjs'
+import { githubOutputOfPlan } from '../scripts/ci-change-plan.mjs'
 import test from 'node:test'
 import { selectLatestDshVersions } from '../scripts/prepare-compat-release.mjs'
 const root = new URL('../', import.meta.url)
@@ -174,4 +179,42 @@ test('release is gated by checks, an immutable draft, and version-appropriate ch
   assert.match(publish, /## What's new[\s\S]*## Install or update[\s\S]*## 中文[\s\S]*## 更新内容[\s\S]*## 安装或更新/u)
   assert.match(publish, /gh release delete "\$TAG" --repo "\$GITHUB_REPOSITORY" -y \|\| true/u)
   assert.doesNotMatch(publish, /--cleanup-tag/u)
+})
+
+
+test('maintenance evidence stays in temporary or repository artifact roots and refuses links', async () => {
+  const temporary = await mkdtemp(path.join(tmpdir(), 'image-evidence-'))
+  const canonicalTemporary = await mkdtemp(path.join(await realpath(tmpdir()), 'image-evidence-canonical-'))
+  try {
+    const canonicalDirectory = await prepareEvidenceDirectory(path.join(canonicalTemporary, 'reports'))
+    await writeEvidence(canonicalDirectory, 'canonical.json', 'actual canonical OS temp')
+    assert.equal(await readFile(await evidenceFile(canonicalDirectory, 'canonical.json'), 'utf8'), 'actual canonical OS temp')
+    const directory = await prepareEvidenceDirectory(path.join(temporary, 'reports'))
+    await writeEvidence(directory, 'report.json', 'first')
+    await writeEvidence(directory, 'report.json', 'updated')
+    assert.equal(await readFile(await evidenceFile(directory, 'report.json'), 'utf8'), 'updated')
+    await assert.rejects(writeEvidence(directory, '../escape.json', 'bad'), /simple leaf/)
+    const outside = path.join(temporary, 'outside')
+    await mkdir(outside)
+    await writeFile(path.join(outside, 'sentinel'), 'preserved')
+    await symlink(outside, path.join(temporary, 'redirect'), process.platform === 'win32' ? 'junction' : 'dir')
+    await assert.rejects(prepareEvidenceDirectory(path.join(temporary, 'redirect', 'reports')), /link or non-directory/)
+    await symlink(process.platform === 'win32' ? outside : path.join(outside, 'sentinel'), path.join(directory, 'redirect.json'), process.platform === 'win32' ? 'junction' : 'file')
+    await assert.rejects(writeEvidence(directory, 'redirect.json', 'bad'), /regular file/)
+    assert.equal(await readFile(path.join(outside, 'sentinel'), 'utf8'), 'preserved')
+    const outsideRoot = path.join(path.parse(tmpdir()).root, path.basename(temporary))
+    await assert.rejects(prepareEvidenceDirectory(outsideRoot), /Evidence must be inside/)
+    assert.ok(evidenceLocation(fileURLToPath(new URL('../.artifacts/reports', import.meta.url))))
+  } finally {
+    await rm(temporary, { recursive: true, force: true })
+    await rm(canonicalTemporary, { recursive: true, force: true })
+  }
+})
+
+test('CI plan output is fixed boolean stdout and browser fixtures do not evaluate source strings', async () => {
+  const plan = { behavior: true, delivery: false, demo: false, official: true, runtime: false }
+  assert.equal(githubOutputOfPlan(plan), 'behavior=true\ndelivery=false\ndemo=false\nofficial=true\nruntime=false\n')
+  assert.throws(() => githubOutputOfPlan({ ...plan, runtime: 'true\ninjected=true' }), /booleans/)
+  const browser = await readFile(new URL('scripts/test-viewer-browser.mjs', root), 'utf8')
+  assert.doesNotMatch(browser, /\beval\b|new Function/u)
 })

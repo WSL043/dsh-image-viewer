@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
+import { prepareEvidenceDirectory, evidenceFile, writeEvidence } from './evidence-paths.mjs'
 import { createServer } from 'node:http'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 import { checkAnnotationZoom } from './annotation-zoom-check.mjs'
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const evidence = process.argv[2] ?? join(repo, '.artifacts', 'viewer-browser')
+const evidence = await prepareEvidenceDirectory(process.argv[2] ?? join(repo, '.artifacts', 'viewer-browser'))
 const clientPath = join(repo, 'lib', 'client.js')
 const image = (width, height, fill) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${fill}"/></svg>`,
@@ -22,7 +23,6 @@ const waitReady = async () => {
   await page.waitForFunction(() => { const img = document.querySelector('.niv-image'); return !!img && img.complete && img.naturalWidth > 0 })
 }
 try {
-  await mkdir(evidence, { recursive: true })
   browser = await chromium.launch({ headless: true })
   page = await browser.newPage({ viewport: { width: 1200, height: 800 } })
   page.setDefaultTimeout(4500)
@@ -79,20 +79,8 @@ try {
       Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: () => `browser-test-${++sequence}` })
     }
   })
-  // Functions cannot cross page.evaluate's structured-clone boundary. Compile
-  // small, test-owned functions in the page and refer to them by name in
-  // serializable viewer requests.
-  const evaluatePage = async (callback, ...args) => page.evaluate(({ source, args: callbackArgs }) => {
-    const fn = (0, eval)(`(${source})`)
-    return fn(...callbackArgs)
-  }, { source: callback.toString(), args })
-  const registerPageCallbacks = async callbacks => {
-    const sources = Object.fromEntries(Object.entries(callbacks).map(([name, callback]) => [name, callback.toString()]))
-    await evaluatePage(function installCallbacks(nextSources) {
-      const compile = source => (0, eval)(`(${source})`)
-      window.__viewerCallbacks = Object.fromEntries(Object.entries(nextSources).map(([name, source]) => [name, compile(source)]))
-    }, sources)
-  }
+  // Playwright serializes the fixed test function; request data stays structured.
+  const evaluatePage = (callback, argument) => page.evaluate(callback, argument)
   const encodeItems = items => items.map(item => {
     const encoded = { ...item }
     if (item.download?.callback) {
@@ -191,9 +179,9 @@ try {
   await waitCounter('3 / 3')
   checks.push('gallery keyboard wrap and navigation buttons')
   await page.emulateMedia({ colorScheme: 'dark' })
-  await page.screenshot({ path: join(evidence, 'viewer-browser-dark.png'), fullPage: true })
+  await page.screenshot({ path: await evidenceFile(evidence, 'viewer-browser-dark.png'), fullPage: true })
   await page.emulateMedia({ colorScheme: 'light' })
-  await page.screenshot({ path: join(evidence, 'viewer-browser-light.png'), fullPage: true })
+  await page.screenshot({ path: await evidenceFile(evidence, 'viewer-browser-light.png'), fullPage: true })
   await page.setViewportSize({ width: 580, height: 800 })
   await page.waitForFunction(() => window.innerWidth === 580 && document.querySelector('.niv-root')?.getBoundingClientRect().width === 580)
   const narrowMetrics = await page.evaluate(() => ({
@@ -203,7 +191,7 @@ try {
   }))
   assert.equal(narrowMetrics.width, 580)
   assert.ok(narrowMetrics.stageWidth > 0 && narrowMetrics.imageWidth <= 556.5, JSON.stringify(narrowMetrics))
-  await page.screenshot({ path: join(evidence, 'viewer-browser-narrow.png'), fullPage: true })
+  await page.screenshot({ path: await evidenceFile(evidence, 'viewer-browser-narrow.png'), fullPage: true })
   await page.setViewportSize({ width: 1200, height: 800 })
   await page.waitForFunction(() => window.innerWidth === 1200 && document.querySelector('.niv-root')?.getBoundingClientRect().width === 1200)
   checks.push('dark light and narrow viewport screenshots')
@@ -498,28 +486,30 @@ try {
       downloadOperations: [],
     }
   })
-  await registerPageCallbacks({
-    oldActionPending: async () => {
-      window.__viewerState.oldActionCalls += 1
-      await new Promise(resolve => { window.__viewerState.resolveOldAction = resolve })
-    },
-    downloadPending: async ({ signal, onProgress }) => {
-      window.__viewerState.downloadPendingCalls += 1
-      const operation = { signal, onProgress }
-      await new Promise((resolve, reject) => {
-        Object.assign(operation, { resolve, reject })
-        window.__viewerState.resolveDownload = resolve
-        window.__viewerState.downloadOperations.push(operation)
-      })
-    },
-    downloadFailRetry: async () => {
-      window.__viewerState.downloadRetryCalls += 1
-      if (window.__viewerState.downloadRetryCalls === 1) throw new Error('synthetic download failure')
-    },
-    actionFailRetry: async () => {
-      window.__viewerState.actionRetryCalls += 1
-      if (window.__viewerState.actionRetryCalls === 1) throw new Error('synthetic action failure')
-    },
+  await page.evaluate(() => {
+    window.__viewerCallbacks = {
+      oldActionPending: async () => {
+        window.__viewerState.oldActionCalls += 1
+        await new Promise(resolve => { window.__viewerState.resolveOldAction = resolve })
+      },
+      downloadPending: async ({ signal, onProgress }) => {
+        window.__viewerState.downloadPendingCalls += 1
+        const operation = { signal, onProgress }
+        await new Promise((resolve, reject) => {
+          Object.assign(operation, { resolve, reject })
+          window.__viewerState.resolveDownload = resolve
+          window.__viewerState.downloadOperations.push(operation)
+        })
+      },
+      downloadFailRetry: async () => {
+        window.__viewerState.downloadRetryCalls += 1
+        if (window.__viewerState.downloadRetryCalls === 1) throw new Error('synthetic download failure')
+      },
+      actionFailRetry: async () => {
+        window.__viewerState.actionRetryCalls += 1
+        if (window.__viewerState.actionRetryCalls === 1) throw new Error('synthetic action failure')
+      },
+    }
   })
   const oldRequestItems = [
     { id: 'old-other', src: normal, name: 'Old other' },
@@ -860,12 +850,12 @@ try {
   checks.push('browser fixture: native clicks and keyboard cancel a pending annotation read before completion; late completion preserves the reopened gallery, existing draft and region note')
   assert.deepEqual(pageErrors, [])
   const result = { ok: true, checks }
-  await writeFile(join(evidence, 'viewer-browser-result.json'), `${JSON.stringify(result)}\n`, 'utf8')
+  await writeEvidence(evidence, 'viewer-browser-result.json', `${JSON.stringify(result)}\n`)
   console.log(JSON.stringify(result))
 } catch (error) {
   const result = { ok: false, checks, error: error instanceof Error ? error.message : String(error), pageErrors }
-  await page?.screenshot({ path: join(evidence, 'viewer-browser-failure.png'), fullPage: true }).catch(() => {})
-  await writeFile(join(evidence, 'viewer-browser-failure.json'), `${JSON.stringify(result)}\n`, 'utf8').catch(() => {})
+  await page?.screenshot({ path: await evidenceFile(evidence, 'viewer-browser-failure.png'), fullPage: true }).catch(() => {})
+  await writeEvidence(evidence, 'viewer-browser-failure.json', `${JSON.stringify(result)}\n`).catch(() => {})
   console.error(JSON.stringify(result))
   process.exitCode = 1
 } finally {
