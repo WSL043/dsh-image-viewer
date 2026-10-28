@@ -1,4 +1,4 @@
-> `dsh-image-viewer@1.0.0-alpha.1` 正在开发，尚未发布，也尚未完成兼容验证。下方安装说明适用于已发布的 0.1.17。
+> `dsh-image-viewer@1.0.0-alpha.1` 候选已通过六版官方 DSH 页面验收，尚未发布。验收范围见[候选记录](docs/unreleased.md)；下方安装说明仍适用于已发布的 0.1.17。
 
 <div align="center">
 
@@ -33,7 +33,7 @@
 
 ## 安装
 
-**[DSH-Portable](https://github.com/WSL043/DSH-Portable) 已预装本插件**，可在插件页启用或卸载；其他 DSH 用户按下方安装。
+**[DSH-Portable](https://github.com/WSL043/DSH-Portable) 0.x Native 完整包预装本插件的已验收发布版**，可在插件页启用或卸载。1.x 官方桌面便携线不预装社区插件；其他 DSH 用户按下方安装。
 
 ### 插件页面（推荐）
 

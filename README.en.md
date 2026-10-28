@@ -1,4 +1,4 @@
-> `dsh-image-viewer@1.0.0-alpha.1` is under development and is not published or fully verified. The installation instructions below describe the released 0.1.17 package.
+> The `dsh-image-viewer@1.0.0-alpha.1` candidate has passed acceptance on six official DSH pages and is not published. See the [candidate evidence](docs/unreleased.md) for scope; installation below still targets the released 0.1.17 package.
 
 <div align="center">
 
@@ -33,7 +33,7 @@ A lightweight viewer for zooming, browsing, downloading, and annotating images a
 
 ## Install
 
-**[DSH-Portable](https://github.com/WSL043/DSH-Portable) ships with this plugin preinstalled.** Enable or uninstall it on the Plugins page; other DSH users can install it below.
+**[DSH-Portable](https://github.com/WSL043/DSH-Portable) 0.x Native full packages include a qualified released version of this plugin.** Enable or uninstall it on the Plugins page. The 1.x official-desktop portable line does not preinstall community plugins; other DSH users can install it below.
 
 ### Plugin page (recommended)
 
