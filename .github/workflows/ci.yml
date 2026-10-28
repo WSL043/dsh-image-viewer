@@ -52,10 +52,12 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: node scripts/test-viewer-browser.mjs .artifacts/browser
       - uses: actions/upload-artifact@v7
-        if: failure()
+        if: always()
         with:
-          name: viewer-browser-failure
+          name: viewer-browser-evidence
           path: .artifacts/browser/
+          retention-days: 7
+          if-no-files-found: warn
           include-hidden-files: true
       - run: git diff --exit-code -- lib
       - run: pnpm pack --pack-destination .artifacts
@@ -102,9 +104,13 @@ jobs:
       - run: pnpm exec playwright install chromium
       - name: Verify actual gallery, zoom, pan, notes, download and plugin lifecycle
         shell: pwsh
-        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .candidate/dsh-image-viewer-*.tgz).FullName -DshVersion '${{ matrix.dsh_version }}'
+        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .candidate/dsh-image-viewer-*.tgz).FullName -DshVersion '${{ matrix.dsh_version }}' -EvidenceRoot '${{ runner.temp }}/dsh-image-viewer-evidence'
       - uses: actions/upload-artifact@v7
-        if: failure()
+        if: always()
         with:
-          name: image-failure-${{ matrix.dsh_version }}
-          path: ${{ runner.temp }}/dsh-image-viewer-official-*/
+          name: image-evidence-${{ matrix.dsh_version }}
+          path: |
+            ${{ runner.temp }}/dsh-image-viewer-evidence/dsh-image-viewer-official-*/official-viewer-annotation*.png
+            ${{ runner.temp }}/dsh-image-viewer-evidence/dsh-image-viewer-official-*/browser-errors.json
+          retention-days: 7
+          if-no-files-found: warn
