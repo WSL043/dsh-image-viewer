@@ -223,6 +223,24 @@ function stateVersion(source) {
   return match[1]
 }
 
+export async function fetchCordisHosts(targets, request = fetch) {
+  if (!Array.isArray(targets) || targets.length !== RELEASE_TARGET_COUNT || new Set(targets).size !== targets.length) {
+    throw new Error('exactly five distinct DSH versions are required')
+  }
+  for (const version of targets) parseVersion(version)
+  const response = await request('https://registry.npmjs.org/@deepseek-ai%2fdsh', {
+    headers: { accept: 'application/vnd.npm.install-v1+json' }, redirect: 'error',
+  })
+  if (!response.ok) throw new Error('Registry HTTP ' + response.status + ' for @deepseek-ai/dsh')
+  const metadata = await response.json()
+  if (metadata.name !== '@deepseek-ai/dsh' || !metadata.versions || typeof metadata.versions !== 'object') throw new Error('invalid DSH registry metadata')
+  return targets.map(version => {
+    const entry = Object.hasOwn(metadata.versions, version) ? metadata.versions[version] : undefined
+    if (entry?.version !== version) throw new Error('missing exact DSH registry version: ' + version)
+    return cordisHostOf(entry.dependencies?.['@deepseek-ai/cordis'])
+  })
+}
+
 async function main() {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
   if (process.argv.includes('--refresh-release-age')) return refreshReleaseAge(root)
@@ -234,11 +252,7 @@ async function main() {
     readFile(resolve(root, 'compatibility.json'), 'utf8').then(JSON.parse),
     readFile(resolve(root, 'package.json'), 'utf8').then(JSON.parse),
   ])
-  const cordisHosts = await Promise.all(targets.map(async version => {
-    const response = await fetch(`https://registry.npmjs.org/@deepseek-ai%2fdsh/${version}`)
-    if (!response.ok) throw new Error(`Registry HTTP ${response.status} for @deepseek-ai/dsh@${version}`)
-    return cordisHostOf((await response.json()).dependencies?.['@deepseek-ai/cordis'])
-  }))
+  const cordisHosts = await fetchCordisHosts(targets)
   const update = planCompatibilityUpdate({ compatibility, manifest }, targets, cordisHosts)
   if (update === null) {
     process.stdout.write(`${JSON.stringify({ changed: false, dshVersions: targets })}\n`)
