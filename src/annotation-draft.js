@@ -1,7 +1,10 @@
-export async function renderAnnotationImage(blob, annotations) {
+export async function renderAnnotationImage(blob, annotations, { signal } = {}) {
+  signal?.throwIfAborted()
   const image = await createImageBitmap(blob)
+  let canvas
   try {
-    const canvas = document.createElement('canvas')
+    signal?.throwIfAborted()
+    canvas = document.createElement('canvas')
     canvas.width = image.width
     canvas.height = image.height
     const context = canvas.getContext('2d')
@@ -24,8 +27,13 @@ export async function renderAnnotationImage(blob, annotations) {
       context.textBaseline = 'middle'
       context.fillText(String(index + 1), x, y)
     })
-    return await new Promise((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Image encoding failed')), 'image/png'))
-  } finally { image.close() }
+    const rendered = await new Promise((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Image encoding failed')), 'image/png'))
+    signal?.throwIfAborted()
+    return rendered
+  } finally {
+    image.close()
+    if (canvas) { canvas.width = 0; canvas.height = 0 }
+  }
 }
 
 const hasOwn = Object.prototype.hasOwnProperty
@@ -48,13 +56,20 @@ export function createAnnotationCommit(ctx, { readBlob, render = renderAnnotatio
     conversation = ctx.get('conversation')
     sessionId = currentSessionId(sessions.list.getSnapshot())
   } catch { /* The viewer also works without a conversation host. */ }
-  return async entries => {
+  return async (entries, { signal } = {}) => {
+    signal?.throwIfAborted()
     if (!sessionId || !conversation?.input?.for || currentSessionId(sessions.list.getSnapshot()) !== sessionId) throw new Error('Composer unavailable or session changed')
-    const prepared = await Promise.all(entries.map(async ({ item, annotations }) => {
-      const image = await render(await readBlob(item.src), annotations)
+    const prepared = []
+    // Decode and encode one image at a time; retain only the prepared files.
+    for (const { item, annotations } of entries) {
+      signal?.throwIfAborted()
+      const source = await readBlob(item.src, { signal })
+      signal?.throwIfAborted()
+      const image = await render(source, annotations, { signal })
+      signal?.throwIfAborted()
       const name = `${String(item.name || 'image').replace(/\.[^.]+$/, '')}-annotated.png`
-      return { file: new File([image], name, { type: 'image/png' }), text: `${name}\n${formatNotes(annotations)}` }
-    }))
+      prepared.push({ file: new File([image], name, { type: 'image/png' }), text: `${name}\n${formatNotes(annotations)}` })
+    }
     if (currentSessionId(sessions.list.getSnapshot()) !== sessionId) throw new Error('Session changed')
     const input = conversation.input.for(sessions.scope(sessionId))
     const state = input.state.getSnapshot()
@@ -63,6 +78,9 @@ export function createAnnotationCommit(ctx, { readBlob, render = renderAnnotatio
     const add = modern ? input.addAttachments : input.addImages
     const release = modern ? conversation.releaseDraftAttachments : conversation.releaseDraftImages
     if (typeof add !== 'function' || typeof release !== 'function') throw new Error('Composer unavailable')
+    // The host's draft methods are synchronous: do not introduce an await
+    // between this final cancellation check and the complete draft update.
+    signal?.throwIfAborted()
     const created = modern ? conversation.createDrafts(sessionId, prepared.map(item => item.file)) : conversation.createDraftImages(prepared.map(item => item.file))
     try {
       if (!add.call(input, created.map(item => item.id))) throw new Error('Composer busy')

@@ -17,7 +17,7 @@ test('declares one optional web client plugin', async () => {
   const compatibility = JSON.parse(await readFile(new URL('compatibility.json', root), 'utf8'))
   assert.equal(pkg.name, 'dsh-image-viewer')
   assert.match(pkg.version, /^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/u)
-  assert.equal(pkg.publishConfig.tag, 'latest')
+  assert.equal(pkg.publishConfig.tag, pkg.version.includes('-') ? 'next' : 'latest', 'prereleases must not default to the stable npm tag')
   assert.equal(compatibility.latestTested, compatibility.releaseTargets[0])
   assert.equal(pkg.dsh.client.platform, 'web')
   assert.ok(pkg.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-layout'))

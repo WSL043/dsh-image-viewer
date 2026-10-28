@@ -1,3 +1,5 @@
+> `dsh-image-viewer@1.0.0-alpha.1` 正在开发，尚未发布，也尚未完成兼容验证。下方安装说明适用于已发布的 0.1.17。
+
 <div align="center">
 
 # DSH Image Viewer · 图片查看器

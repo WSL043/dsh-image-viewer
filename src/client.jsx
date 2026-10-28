@@ -174,11 +174,18 @@ function ViewerOverlay({ service, t }) {
     document.body.style.overflow = 'hidden'
     rootRef.current?.focus()
     const onKeyDown = event => {
-      if (service.getSnapshot()?.committing) { event.preventDefault(); event.stopPropagation(); return }
       if (event.defaultPrevented || event.isComposing) return
+      if (service.getSnapshot()?.committing && event.key !== 'Escape' && event.key !== 'Tab') {
+        if (['Enter', ' '].includes(event.key) && event.target instanceof Element && event.target.closest('[data-niv-cancel-commit]')) return
+        event.preventDefault(); event.stopPropagation(); return
+      }
       if (event.key === 'Escape') {
         event.preventDefault()
         event.stopPropagation()
+        if (service.getSnapshot()?.committing) {
+          void service.close({ discard: true })
+          return
+        }
         if (event.target instanceof Element && event.target.closest('.niv-inline-note') !== null) {
           setSelected(undefined)
           rootRef.current?.focus()
@@ -214,7 +221,7 @@ function ViewerOverlay({ service, t }) {
       document.body.style.overflow = previousOverflow
       root.removeEventListener('keydown', onKeyDown)
     }
-  }, [request, service, fit, setZoomAt])
+  }, [request?.revision, service, fit, setZoomAt])
 
   useEffect(() => {
     if (focusNote === undefined) return
@@ -271,7 +278,7 @@ function ViewerOverlay({ service, t }) {
     }
   }
   return <div ref={rootRef} className="niv-root" role="dialog" aria-modal="true" aria-label={t('dialog')} tabIndex={-1}>
-    {request.committing || request.commitError ? <div className="niv-draft-status" role="status">{t(request.committing ? 'addingDraft' : 'draftFailed')}{request.commitError ? <button className="niv-button" type="button" onClick={() => { void service.close({ discard: true }) }}>{t('closeWithoutDraft')}</button> : null}</div> : null}
+    {request.committing || request.commitError ? <div className="niv-draft-status" role="status">{t(request.committing ? 'addingDraft' : 'draftFailed')}<button className="niv-button" type="button" data-niv-cancel-commit="" onClick={() => { void service.close({ discard: true }) }}>{t('closeWithoutDraft')}</button></div> : null}
     <div className="niv-title"><strong>{item.name}</strong>{meta !== '' ? <small>{meta}</small> : null}</div>
     <header className="niv-topbar" role="toolbar" aria-label={t('dialog')}>
       <div className="niv-actions">
@@ -285,7 +292,7 @@ function ViewerOverlay({ service, t }) {
         {item.actions.map(action => <ViewerAction action={action} annotations={annotations} item={item} service={service} revision={request.revision} key={`${request.revision}:${item.src}:${action.id}`} />)}
       </div>
     </header>
-    <button type="button" className="niv-close-floating" aria-label={t('close')} onClick={() => service.close()}><IconCloseOutline16 /></button>
+    <button type="button" className="niv-close-floating" data-niv-cancel-commit="" aria-label={t(request.committing ? 'closeWithoutDraft' : 'close')} onClick={() => service.close({ discard: request.committing === true })}><IconCloseOutline16 /></button>
     <div className="niv-workspace">
       <main ref={stageRef} className="niv-stage" data-dragging={dragging} data-annotating={annotating} onClick={event => { if (event.target === event.currentTarget && !annotating && transform.zoom === 1) service.close() }} {...(!annotating && imageState === 'ready' ? pointerHandlers : {})} onDoubleClick={event => { if (event.target.closest('button,a,input,textarea') || imageState !== 'ready') return; if (transform.zoom === 1) actual(); else fit() }}>
         {imageState !== 'ready' ? <div className="niv-load-status" role={imageState === 'error' ? 'alert' : 'status'}>{t(imageState === 'error' ? 'loadFailed' : 'loading')}{imageState === 'error' ? <button type="button" className="niv-button" onClick={() => { setImageState('loading'); setAttempt(value => value + 1) }}>{t('retry')}</button> : null}</div> : null}
@@ -329,7 +336,7 @@ function installOfficialImageBridge(service, ctx, t) {
     event.stopPropagation()
     event.stopImmediatePropagation()
     const commitAnnotations = createAnnotationCommit(ctx, {
-      readBlob: src => readImageBlob(src, { signal: new AbortController().signal, onProgress: () => {} }),
+      readBlob: (src, { signal }) => readImageBlob(src, { signal, onProgress: () => {} }),
       formatNotes: annotations => noteText(annotations, t),
     })
     service.open({ items, index, opener: match.button, source: 'dsh-native', annotations: true, commitAnnotations })
@@ -352,7 +359,7 @@ export function apply(ctx) {
   ctx.effect(() => {
     const disposeService = ctx.reflect.provide('nativeImageViewer', service)
     const disposeBridge = installOfficialImageBridge(service, ctx, t)
-    return () => { disposeBridge(); void disposeService() }
+    return () => { disposeBridge(); service.dispose(); void disposeService() }
   }, `${name}: optional viewer service and native image bridge`)
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay', id: name, order: 20, inject: () => ({ service, t }),

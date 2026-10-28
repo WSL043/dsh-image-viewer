@@ -1,3 +1,5 @@
+> `dsh-image-viewer@1.0.0-alpha.1` is under development and is not published or fully verified. The installation instructions below describe the released 0.1.17 package.
+
 <div align="center">
 
 # DSH Image Viewer

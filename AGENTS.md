@@ -1,3 +1,5 @@
+> Development candidate: `dsh-image-viewer@1.0.0-alpha.1` is not published or fully verified. Do not substitute it for the released 0.1.17 installation below.
+
 > Current release: dsh-image-viewer@0.1.17, qualified targets DSH 0.2.2-alpha.2, 0.2.1-rc.4, 0.2.1-rc.3, 0.2.1-rc.2, 0.2.1-rc.1.
 
 # Agent installation guide
