@@ -1,4 +1,4 @@
-> `dsh-image-viewer@1.0.0-alpha.1` 候选已通过六版官方 DSH 页面验收，尚未发布。验收范围见[候选记录](docs/unreleased.md)；下方安装说明仍适用于已发布的 0.1.17。
+> `dsh-image-viewer@1.0.0-alpha.1` 候选已通过六版官方 DSH 页面验收，尚未发布。验收范围见[候选记录](docs/unreleased.md)；下方安装说明使用 npm `latest` 稳定版，其支持窗口独立于候选。
 
 <div align="center">
 
@@ -33,30 +33,32 @@
 
 ## 安装
 
-**[DSH-Portable](https://github.com/WSL043/DSH-Portable) 0.x Native 完整包预装本插件的已验收发布版**，可在插件页启用或卸载。1.x 官方桌面便携线不预装社区插件；其他 DSH 用户按下方安装。
+[DSH-Portable](https://github.com/WSL043/DSH-Portable) 0.9.9 起的新包将不再预装社区插件，本插件可按需安装；历史包中已安装的插件保留。1.x 官方桌面便携线也不预装社区插件。
 
 ### 插件页面（推荐）
 
-1. 打开 DSH 的 **插件 → 添加插件**。
+1. 先核对目标 DSH、profile、`latest` 解析出的实际插件版本及其 peer 要求，再打开 **插件 → 添加插件**。
 2. 在“包名或地址”中粘贴下面这一行并点击安装：
 
 ```text
-dsh-image-viewer@0.1.17
+dsh-image-viewer@latest
 ```
 
 3. 查看安装结果；仅在页面要求时刷新或重启。
 
 <!-- dsh-compatibility -->
-**版本 0.1.17 支持 DSH 内核 `0.2.2-alpha.2`、`0.2.1-rc.4`、`0.2.1-rc.3`、`0.2.1-rc.2`、`0.2.1-rc.1`。**
+稳定版支持窗口见 [stable 维护分支](https://github.com/WSL043/dsh-image-viewer/blob/stable/README.md#安装)，安装保护见 [stable AGENTS.md](https://github.com/WSL043/dsh-image-viewer/blob/stable/AGENTS.md)；不以本分支候选的 peer 范围代替。
 <!-- /dsh-compatibility -->
+
+稳定维护每 6 小时检测上游；兼容补丁通过验收后自动发布到 npm 和 GitHub Releases，失败则停发并报告错误。此流程不发布或扩大本分支候选的支持范围。
 
 ### 终端安装（可选）
 
 官方 DSH Desktop 请先通过应用的 **Manage dsh Command…** 安装自带命令；完成一次初始化后，完全退出应用再运行 `--profile desktop`。DSH-Portable 0.x 和网页版使用 `--profile web`。
 
 ```sh
-dsh plugin --profile desktop add dsh-image-viewer@0.1.17
-dsh plugin --profile web add dsh-image-viewer@0.1.17
+dsh plugin --profile desktop add dsh-image-viewer@latest
+dsh plugin --profile web add dsh-image-viewer@latest
 ```
 
 终端操作后按宿主提示重新启动对应 profile。

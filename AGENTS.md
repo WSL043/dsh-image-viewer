@@ -1,6 +1,6 @@
-> Development candidate: `dsh-image-viewer@1.0.0-alpha.1` has passed the scoped six-version official-page acceptance linked in docs/unreleased.md and is not published. Do not substitute it for the released 0.1.17 installation below.
+> Development candidate: `dsh-image-viewer@1.0.0-alpha.1` has passed the scoped six-version official-page acceptance linked in docs/unreleased.md and is not published. Do not substitute it for the npm `latest` stable release below.
 
-> Current release: dsh-image-viewer@0.1.17, qualified targets DSH 0.2.2-alpha.2, 0.2.1-rc.4, 0.2.1-rc.3, 0.2.1-rc.2, 0.2.1-rc.1.
+> Stable support and installation protections: [stable README](https://github.com/WSL043/dsh-image-viewer/blob/stable/README.md) and [stable AGENTS.md](https://github.com/WSL043/dsh-image-viewer/blob/stable/AGENTS.md). Candidate compatibility does not carry over.
 
 # Agent installation guide
 
@@ -9,20 +9,22 @@ Use this guide only when the user asks to install, update, verify, or remove `ds
 ## Safety
 
 - Confirm the target DSH installation and profile.
-- Install the exact requested version; do not install a moving branch.
+- Install the exact requested npm version. For `dsh-image-viewer@latest`, first resolve its actual registry version, check its peer requirements against the target DSH and profile, then install that exact version; never install a moving source branch.
 - Preserve conversations, attachments, unrelated plugins, settings, and credentials.
 - Do not start, stop, or restart DSH without permission.
 - Never copy, upload, or expose the user's images as part of installation verification.
 
 ## Install or update
 
-For DSH 0.2.2-alpha.2, 0.2.1-rc.4, 0.2.1-rc.3, 0.2.1-rc.2, and 0.2.1-rc.1, use dsh-image-viewer@0.1.17 in **Plugins → Add plugin**. No other cores are claimed by this release.
+Read the dynamic stable guides above before an authorized installation. Replace `VERSION` below with the verified resolved npm version; use `web` only for the selected Web profile.
 
 ```sh
-dsh plugin --profile web add dsh-image-viewer@0.1.17
+dsh plugin --profile web add dsh-image-viewer@VERSION
 ```
 
 DSH-Portable exposes the same standard `dsh plugin` command. Do not use a private executable path in public instructions.
+
+Stable maintenance checks upstream every 6 hours and publishes compatible patches to npm and GitHub Releases only after acceptance. Failures block publication and report an error; the unpublished candidate remains outside that process.
 
 ## Verify
 
