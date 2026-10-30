@@ -50,7 +50,7 @@ dsh-image-viewer@latest
 See the [stable maintenance branch](https://github.com/WSL043/dsh-image-viewer/blob/stable/README.en.md#install) for the stable support window and [stable AGENTS.md](https://github.com/WSL043/dsh-image-viewer/blob/stable/AGENTS.md) for installation protections. The candidate peer range does not replace them.
 <!-- /dsh-compatibility -->
 
-Stable maintenance checks upstream every 6 hours. Compatibility patches publish automatically to npm and GitHub Releases after acceptance; failures block publication and report an error. This process does not publish or widen support for this branch's candidate.
+Stable maintenance checks upstream every hour. Compatibility patches publish automatically to npm and GitHub Releases after acceptance; failures block publication and report an error. This process does not publish or widen support for this branch's candidate.
 
 ### Terminal (optional)
 

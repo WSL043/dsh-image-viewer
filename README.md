@@ -50,7 +50,7 @@ dsh-image-viewer@latest
 稳定版支持窗口见 [stable 维护分支](https://github.com/WSL043/dsh-image-viewer/blob/stable/README.md#安装)，安装保护见 [stable AGENTS.md](https://github.com/WSL043/dsh-image-viewer/blob/stable/AGENTS.md)；不以本分支候选的 peer 范围代替。
 <!-- /dsh-compatibility -->
 
-稳定维护每 6 小时检测上游；兼容补丁通过验收后自动发布到 npm 和 GitHub Releases，失败则停发并报告错误。此流程不发布或扩大本分支候选的支持范围。
+稳定维护每小时检测上游；兼容补丁通过验收后自动发布到 npm 和 GitHub Releases，失败则停发并报告错误。此流程不发布或扩大本分支候选的支持范围。
 
 ### 终端安装（可选）
 

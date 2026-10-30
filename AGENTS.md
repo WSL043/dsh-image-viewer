@@ -24,7 +24,7 @@ dsh plugin --profile web add dsh-image-viewer@VERSION
 
 DSH-Portable exposes the same standard `dsh plugin` command. Do not use a private executable path in public instructions.
 
-Stable maintenance checks upstream every 6 hours and publishes compatible patches to npm and GitHub Releases only after acceptance. Failures block publication and report an error; the unpublished candidate remains outside that process.
+Stable maintenance checks upstream every hour and publishes compatible patches to npm and GitHub Releases only after acceptance. Failures block publication and report an error; the unpublished candidate remains outside that process.
 
 ## Verify
 
