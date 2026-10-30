@@ -43,7 +43,11 @@ test('declares one optional web client plugin', async () => {
   }
   for (const filename of ['README.md', 'README.en.md', 'AGENTS.md']) {
     const guide = await readFile(new URL(filename, root), 'utf8')
-    for (const version of compatibility.releaseTargets) assert.ok(guide.includes(version), `${filename} lacks ${version}`)
+    assert.ok(guide.includes('dsh-image-viewer@latest'), `${filename} lacks the stable installation tag`)
+    const links = [...guide.matchAll(/\]\((https:\/\/[^)]+)\)/gu)].map(([, href]) => new URL(href))
+    const stableFiles = links.filter(link => link.origin === 'https://github.com').map(link => link.pathname)
+    assert.ok(stableFiles.some(path => ['/WSL043/dsh-image-viewer/blob/stable/README.md', '/WSL043/dsh-image-viewer/blob/stable/README.en.md'].includes(path)))
+    assert.ok(stableFiles.includes('/WSL043/dsh-image-viewer/blob/stable/AGENTS.md'))
     assert.ok(guide.includes(`dsh-image-viewer@${pkg.version}`), `${filename} lacks the prepared package version`)
     assert.doesNotMatch(guide, /0\.1\.7-alpha\.1/u, `${filename} must not claim the out-of-window core`)
   }

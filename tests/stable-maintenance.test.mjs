@@ -35,6 +35,7 @@ test('development forwarding and stable publication retain the same acceptance p
   const { readFile } = await import('node:fs/promises')
   const upstream = await readFile(new URL('../.github/workflows/upstream-compatibility.yml', import.meta.url), 'utf8')
   const publish = await readFile(new URL('../.github/workflows/publish.yml', import.meta.url), 'utf8')
+  assert.ok(upstream.includes("cron: '37 * * * *'"), 'stable maintenance checks hourly at its staggered minute')
   assert.match(upstream, /gh workflow run upstream-compatibility\.yml[^\n]+--ref stable/u)
   assert.match(upstream, /if: steps\.source\.outputs\.forwarded != 'true'/u)
   assert.doesNotMatch(upstream, /Development next candidate: automatic compatibility publication is held/u)

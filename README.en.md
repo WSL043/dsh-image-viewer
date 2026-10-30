@@ -1,4 +1,4 @@
-> The `dsh-image-viewer@1.0.0-alpha.1` candidate has passed acceptance on six official DSH pages and is not published. See the [candidate evidence](docs/unreleased.md) for scope; installation below still targets the released 0.1.17 package.
+> The `dsh-image-viewer@1.0.0-alpha.1` candidate has passed acceptance on six official DSH pages and is not published. See the [candidate evidence](docs/unreleased.md) for scope; installation below uses the npm `latest` stable release, whose support window is independent of the candidate.
 
 <div align="center">
 
@@ -33,30 +33,32 @@ A lightweight viewer for zooming, browsing, downloading, and annotating images a
 
 ## Install
 
-**[DSH-Portable](https://github.com/WSL043/DSH-Portable) 0.x Native full packages include a qualified released version of this plugin.** Enable or uninstall it on the Plugins page. The 1.x official-desktop portable line does not preinstall community plugins; other DSH users can install it below.
+New [DSH-Portable](https://github.com/WSL043/DSH-Portable) packages starting with 0.9.9 will no longer preinstall community plugins. Install this plugin if wanted; existing plugin installations in older packages are preserved. The 1.x official-desktop portable line also does not preinstall community plugins.
 
 ### Plugin page (recommended)
 
-1. Open **Plugins → Add plugin** in DSH.
+1. Check the target DSH, profile, actual version resolved by `latest`, and its peer requirements before opening **Plugins → Add plugin**.
 2. Paste this line into **Package name or address**, then select Install:
 
 ```text
-dsh-image-viewer@0.1.17
+dsh-image-viewer@latest
 ```
 
 3. Follow the result shown on the page; refresh or restart only when requested.
 
 <!-- dsh-compatibility -->
-**Version 0.1.17 supports DSH cores `0.2.2-alpha.2`, `0.2.1-rc.4`, `0.2.1-rc.3`, `0.2.1-rc.2`, and `0.2.1-rc.1`.**
+See the [stable maintenance branch](https://github.com/WSL043/dsh-image-viewer/blob/stable/README.en.md#install) for the stable support window and [stable AGENTS.md](https://github.com/WSL043/dsh-image-viewer/blob/stable/AGENTS.md) for installation protections. The candidate peer range does not replace them.
 <!-- /dsh-compatibility -->
+
+Stable maintenance checks upstream every hour. Compatibility patches publish automatically to npm and GitHub Releases after acceptance; failures block publication and report an error. This process does not publish or widen support for this branch's candidate.
 
 ### Terminal (optional)
 
 For official DSH Desktop, install its bundled command through **Manage dsh Command…**; after initialization, fully quit the app before using `--profile desktop`. DSH-Portable 0.x and the Web profile use `--profile web`.
 
 ```sh
-dsh plugin --profile desktop add dsh-image-viewer@0.1.17
-dsh plugin --profile web add dsh-image-viewer@0.1.17
+dsh plugin --profile desktop add dsh-image-viewer@latest
+dsh plugin --profile web add dsh-image-viewer@latest
 ```
 
 After a terminal operation, restart the corresponding profile as prompted by the host.

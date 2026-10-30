@@ -2,7 +2,7 @@ name: DSH compatibility autopilot
 
 on:
   schedule:
-    - cron: '37 */6 * * *'
+    - cron: '37 * * * *'
   workflow_dispatch:
 
 permissions:
