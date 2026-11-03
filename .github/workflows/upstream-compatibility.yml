@@ -215,12 +215,12 @@ jobs:
       - run: pnpm exec playwright install chromium
       - name: Accept the exact same candidate package on this core
         shell: pwsh
-        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .artifacts/dsh-image-viewer.tgz).FullName -DshVersion '${{ matrix.dsh_version }}'
+        run: ./.github/scripts/accept-official-release.ps1 -PackagePath (Get-Item .artifacts/dsh-image-viewer.tgz).FullName -DshVersion '${{ matrix.dsh_version }}' -EvidenceRoot $env:RUNNER_TEMP
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: image-viewer-official-failure-${{ matrix.dsh_version }}
-          path: ${{ runner.temp }}/dsh-image-viewer-official-*/
+          path: ${{ runner.temp }}/dsh-image-viewer-official-*/browser-failure.png
 
   publish:
     needs: [prepare, acceptance]

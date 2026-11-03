@@ -70,24 +70,11 @@ function Start-And-ProbeWeb {
     $listener.Stop()
     $stdout = Join-Path $acceptanceRoot 'web.stdout.log'
     $stderr = Join-Path $acceptanceRoot 'web.stderr.log'
-    $arguments = @($runnerPrefix) + @('--profile', $Profile)
-    if ($DshVersion -eq '0.2.2-alpha.2') {
-        # Match the official web test scaffold's pre-acknowledged notice.
-        # Apply it only to this disposable browser host, through DSH's CLI.
-        $overlay = 'preview-notice.cordis.patch.yml'
-        @(
-            '- id: ui-settings-general'
-            '  config:'
-            "    welcomeNoticeVersion: '2026-09-28.1'"
-        ) | Set-Content -LiteralPath (Join-Path $workspace $overlay) -Encoding utf8
-        $arguments += @('--patch', $overlay)
-    }
-    $arguments += @('--no-open', '--port', [string] $port)
+    $arguments = @($runnerPrefix) + @('--profile', $Profile, '--no-open', '--host', '127.0.0.1', '--port', [string] $port)
     $process = Start-Process -FilePath $runner.Source -ArgumentList $arguments -WorkingDirectory $workspace -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     try {
         $deadline = [DateTime]::UtcNow.AddSeconds($StartupTimeoutSeconds)
         $response = $null
-        $webSession = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
         while ([DateTime]::UtcNow -lt $deadline) {
             if ($process.HasExited) {
                 $details = "$(Get-Content -LiteralPath $stdout -Raw -ErrorAction SilentlyContinue)`n$(Get-Content -LiteralPath $stderr -Raw -ErrorAction SilentlyContinue)"
@@ -96,8 +83,9 @@ function Start-And-ProbeWeb {
             try {
                 $startupLog = Get-Content -LiteralPath $stdout -Raw -ErrorAction SilentlyContinue
                 $loggedUrl = [regex]::Match([string] $startupLog, 'dsh web:\s+(http://127\.0\.0\.1:' + $port + '/(?:\?token=[A-Za-z0-9_-]+)?)')
-                $readinessUrl = if ($loggedUrl.Success) { $loggedUrl.Groups[1].Value } else { "http://127.0.0.1:$port/" }
-                $response = Invoke-WebRequest -UseBasicParsing $readinessUrl -WebSession $webSession -TimeoutSec 2
+                if (-not $loggedUrl.Success) { Start-Sleep -Milliseconds 250; continue }
+                $readinessUrl = $loggedUrl.Groups[1].Value
+                $response = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$port/" -TimeoutSec 2
                 if ($response.StatusCode -eq 200) { break }
             } catch { Start-Sleep -Milliseconds 250 }
         }
