@@ -80,7 +80,8 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
 const errors = []
 page.on('pageerror', error => errors.push(error.message))
 try {
-  await page.goto(url, { waitUntil: 'domcontentloaded' })
+  const response = await page.goto(url, { waitUntil: 'domcontentloaded' })
+  assert.ok(response?.ok(), `Official DSH browser request failed (HTTP ${response?.status() ?? 'no response'}).`)
   const notice = page.getByRole('dialog', { name: /Internal Testing Notice|内测声明/ })
   await notice.waitFor({ timeout: 5000 }).catch(() => {})
   await dismissOfficialFirstRunOverlay(page)

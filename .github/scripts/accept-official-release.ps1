@@ -74,23 +74,22 @@ function Start-And-ProbeWeb {
     $process = Start-Process -FilePath $runner.Source -ArgumentList $arguments -WorkingDirectory $workspace -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     try {
         $deadline = [DateTime]::UtcNow.AddSeconds($StartupTimeoutSeconds)
-        $response = $null
+        $browserUrl = $null
         while ([DateTime]::UtcNow -lt $deadline) {
             if ($process.HasExited) {
                 $details = "$(Get-Content -LiteralPath $stdout -Raw -ErrorAction SilentlyContinue)`n$(Get-Content -LiteralPath $stderr -Raw -ErrorAction SilentlyContinue)"
                 throw "DSH Web exited before readiness. $details"
             }
-            try {
-                $startupLog = Get-Content -LiteralPath $stdout -Raw -ErrorAction SilentlyContinue
-                $loggedUrl = [regex]::Match([string] $startupLog, 'dsh web:\s+(http://127\.0\.0\.1:' + $port + '/(?:\?token=[A-Za-z0-9_-]+)?)')
-                if (-not $loggedUrl.Success) { Start-Sleep -Milliseconds 250; continue }
-                $readinessUrl = $loggedUrl.Groups[1].Value
-                $response = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$port/" -TimeoutSec 2
-                if ($response.StatusCode -eq 200) { break }
-            } catch { Start-Sleep -Milliseconds 250 }
+            $startupLog = Get-Content -LiteralPath $stdout -Raw -ErrorAction SilentlyContinue
+            $loggedUrl = [regex]::Match([string] $startupLog, 'dsh web:\s+(http://127\.0\.0\.1:' + $port + '/(?:\?token=[A-Za-z0-9_-]+)?)(?=\s)')
+            if ($loggedUrl.Success) {
+                $browserUrl = $loggedUrl.Groups[1].Value
+                break
+            }
+            Start-Sleep -Milliseconds 250
         }
-        if (-not $response -or $response.StatusCode -ne 200 -or $response.Content -notmatch 'DeepSeek Harness') { throw 'DSH Web did not become ready with the candidate plugin.' }
-        & node (Join-Path $PSScriptRoot '../../scripts/accept-browser.mjs') $readinessUrl $acceptanceRoot
+        if (-not $browserUrl) { throw 'DSH did not report its loopback browser URL.' }
+        & node (Join-Path $PSScriptRoot '../../scripts/accept-browser.mjs') $browserUrl $acceptanceRoot
         if ($LASTEXITCODE -ne 0) { throw 'Official image browser acceptance failed.' }
     } finally {
         if (-not $process.HasExited) { & taskkill.exe /PID $process.Id /T /F 2>$null | Out-Null }
