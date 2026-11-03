@@ -70,7 +70,19 @@ function Start-And-ProbeWeb {
     $listener.Stop()
     $stdout = Join-Path $acceptanceRoot 'web.stdout.log'
     $stderr = Join-Path $acceptanceRoot 'web.stderr.log'
-    $arguments = @($runnerPrefix) + @('--profile', $Profile, '--no-open', '--port', [string] $port)
+    $arguments = @($runnerPrefix) + @('--profile', $Profile)
+    if ($DshVersion -eq '0.2.2-alpha.2') {
+        # Match the official web test scaffold's pre-acknowledged notice.
+        # Apply it only to this disposable browser host, through DSH's CLI.
+        $overlay = 'preview-notice.cordis.patch.yml'
+        @(
+            '- id: ui-settings-general'
+            '  config:'
+            "    welcomeNoticeVersion: '2026-09-28.1'"
+        ) | Set-Content -LiteralPath (Join-Path $workspace $overlay) -Encoding utf8
+        $arguments += @('--patch', $overlay)
+    }
+    $arguments += @('--no-open', '--port', [string] $port)
     $process = Start-Process -FilePath $runner.Source -ArgumentList $arguments -WorkingDirectory $workspace -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     try {
         $deadline = [DateTime]::UtcNow.AddSeconds($StartupTimeoutSeconds)

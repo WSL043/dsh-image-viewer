@@ -45,21 +45,9 @@ async function dismissOfficialFirstRunOverlayOnce(page) {
     }
 
     await closeButton.click()
-    const isPreviewNotice = firstRunOverlay.name.startsWith('Preview Notice')
-    try {
-      await expect(overlay).toBeHidden()
-    } catch (error) {
-      const saveFailure = overlay.getByRole('alert').filter({
-        hasText: /^(The acknowledgement could not be saved[.] Please try again[.]|暂时无法保存确认状态，请重试。)$/,
-      })
-      if (!isPreviewNotice || !(await saveFailure.isVisible())) throw error
-      // DSH leaves the notice open when its acknowledgement did not persist.
-      console.warn('Retrying the official Preview Notice acknowledgement after a reported save failure.')
-      await closeButton.click()
-      await expect(overlay).toBeHidden()
-    }
+    await expect(overlay).toBeHidden()
     dismissedAny = true
-    if (isPreviewNotice) previewNoticeDismissed = true
+    if (firstRunOverlay.name.startsWith('Preview Notice')) previewNoticeDismissed = true
   }
   // Any other first-run dialog (for example a sign-in step) is closed through its own dismiss button.
   const other = page.locator('[role="dialog"]:visible').last()
