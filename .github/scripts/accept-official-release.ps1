@@ -81,10 +81,12 @@ function Start-And-ProbeWeb {
                 throw "DSH Web exited before readiness. $details"
             }
             $startupLog = Get-Content -LiteralPath $stdout -Raw -ErrorAction SilentlyContinue
-            $loggedUrl = [regex]::Match([string] $startupLog, 'dsh web:\s+(http://127\.0\.0\.1:' + $port + '/(?:\?token=[A-Za-z0-9_-]+)?)(?=\s)')
-            if ($loggedUrl.Success) {
-                $browserUrl = $loggedUrl.Groups[1].Value
-                break
+            if ($startupLog) {
+                $loggedUrl = [regex]::Match([string] $startupLog, 'dsh web:\s+(http://127\.0\.0\.1:' + $port + '/(?:\?token=[A-Za-z0-9_-]+)?)(?=\s)')
+                if ($loggedUrl.Success) {
+                    $browserUrl = $loggedUrl.Groups[1].Value
+                    break
+                }
             }
             Start-Sleep -Milliseconds 250
         }
