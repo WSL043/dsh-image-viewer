@@ -12,6 +12,7 @@ $ErrorActionPreference = 'Stop'
 $pluginRowPattern = '(?m)^[ \t]*(?:(?:├──|└──|\+--)[ \t]*)?dsh-image-viewer(@|[ \t]+)\d'
 $package = (Resolve-Path -LiteralPath $PackagePath).Path
 $runner = Get-Command $DshRunner -CommandType Application -ErrorAction Stop | Select-Object -First 1
+$runnerExecutable = $runner.Source
 $runnerPrefix = @(
     '--config.minimum-release-age=0',
     'dlx',
@@ -34,18 +35,18 @@ New-Item -ItemType Directory -Path $workspace | Out-Null
 
 function Invoke-Dsh {
     param([Parameter(Mandatory = $true)][string[]] $Arguments)
-    & $runner.Source @runnerPrefix @Arguments
+    & $runnerExecutable @runnerPrefix @Arguments
     if ($LASTEXITCODE -ne 0) { throw "Official DSH command failed with exit code $LASTEXITCODE." }
 }
 
 function Get-PluginList {
-    $output = & $runner.Source @runnerPrefix plugin --profile $Profile list dsh-image-viewer --depth 0 2>&1 | Out-String
+    $output = & $runnerExecutable @runnerPrefix plugin --profile $Profile list dsh-image-viewer --depth 0 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { throw 'Official DSH plugin list failed.' }
     return $output
 }
 
 function Get-ComposedConfig {
-    $output = & $runner.Source @runnerPrefix --profile $Profile --dump-config 2>&1 | Out-String
+    $output = & $runnerExecutable @runnerPrefix --profile $Profile --dump-config 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { throw 'Official DSH config composition failed.' }
     return $output
 }
@@ -71,7 +72,7 @@ function Start-And-ProbeWeb {
     $stdout = Join-Path $acceptanceRoot 'web.stdout.log'
     $stderr = Join-Path $acceptanceRoot 'web.stderr.log'
     $arguments = @($runnerPrefix) + @('--profile', $Profile, '--no-open', '--host', '127.0.0.1', '--port', [string] $port)
-    $process = Start-Process -FilePath $runner.Source -ArgumentList $arguments -WorkingDirectory $workspace -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+    $process = Start-Process -FilePath $runnerExecutable -ArgumentList ($arguments | ForEach-Object { if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ } }) -WorkingDirectory $workspace -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     try {
         $deadline = [DateTime]::UtcNow.AddSeconds($StartupTimeoutSeconds)
         $browserUrl = $null
@@ -100,10 +101,41 @@ function Start-And-ProbeWeb {
 
 try {
     Push-Location -LiteralPath $workspace
+    if ($DshVersion -eq '0.2.2-alpha.2') {
+        # This release's prerelease ranges also admit the next Cordis cohort.
+        # Use the original cohort in the disposable acceptance installation.
+        $runtime = Join-Path $acceptanceRoot 'runtime'
+        New-Item -ItemType Directory -Path $runtime | Out-Null
+        '{"private":true,"dependencies":{"@deepseek-ai/dsh":"0.2.2-alpha.2"}}' |
+            Set-Content -LiteralPath (Join-Path $runtime 'package.json') -Encoding utf8
+        @'
+minimumReleaseAge: 0
+allowBuilds:
+  fs-ext: true
+  '@deepseek-ai/dsh-subprocess-local': true
+  '@google/genai': true
+  koffi: true
+  node-pty: true
+  protobufjs: true
+overrides:
+  '@deepseek-ai/cordis': 4.0.6-alpha.1
+  '@deepseek-ai/cordis-plugin-group': 1.0.6-alpha.1
+  '@deepseek-ai/cordis-plugin-include': 1.0.11-alpha.1
+  '@deepseek-ai/cordis-plugin-loader': 1.0.7-alpha.1
+  '@deepseek-ai/cordis-plugin-timer': 1.1.8-alpha.1
+  '@deepseek-ai/cosmokit': 1.8.7-alpha.1
+  '@deepseek-ai/schemastery': 3.18.6-alpha.1
+'@ | Set-Content -LiteralPath (Join-Path $runtime 'pnpm-workspace.yaml') -Encoding utf8
+        & $runnerExecutable --dir $runtime install --no-frozen-lockfile
+        if ($LASTEXITCODE -ne 0) { throw 'Official alpha.2 fixture installation failed.' }
+        $runnerExecutable = (Get-Command node -CommandType Application -ErrorAction Stop).Source
+        $runtimeBin = Join-Path $runtime 'node_modules/@deepseek-ai/dsh/lib/bin.js'
+        $runnerPrefix = @($runtimeBin)
+    }
     Invoke-Dsh @('plugin', '--profile', $Profile, 'add', $package, '--loglevel', 'error')
     Assert-InstalledOnce
     $ErrorActionPreference = 'Continue'
-    try { & $runner.Source @runnerPrefix --profile headless 'Image viewer synthetic acceptance' *> (Join-Path $acceptanceRoot 'seed.log') }
+    try { & $runnerExecutable @runnerPrefix --profile headless 'Image viewer synthetic acceptance' *> (Join-Path $acceptanceRoot 'seed.log') }
     finally { $ErrorActionPreference = 'Stop' }
     $transcripts = @(Get-ChildItem -LiteralPath (Join-Path $env:DSH_HOME 'sessions') -Recurse -File | Where-Object { $_.Name -match '^session(\.v[1-9]\d*)?\.jsonl(\.zstd)?$' })
     if ($transcripts.Count -ne 1) { throw 'Official DSH did not create exactly one synthetic session; inspect seed.log.' }
