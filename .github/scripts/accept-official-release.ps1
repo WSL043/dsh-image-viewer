@@ -128,7 +128,7 @@ overrides:
 '@ | Set-Content -LiteralPath (Join-Path $runtime 'pnpm-workspace.yaml') -Encoding utf8
         & $runnerExecutable --dir $runtime install --no-frozen-lockfile
         if ($LASTEXITCODE -ne 0) { throw 'Official alpha.2 fixture installation failed.' }
-        $runnerExecutable = (Get-Command node -CommandType Application -ErrorAction Stop).Source
+        $runnerExecutable = (Get-Command node -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
         $runtimeBin = Join-Path $runtime 'node_modules/@deepseek-ai/dsh/lib/bin.js'
         $runnerPrefix = @($runtimeBin)
     }
