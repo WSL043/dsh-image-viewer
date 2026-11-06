@@ -1,15 +1,9 @@
 {
   "releaseTargets": [
-    "0.2.2-alpha.2",
-    "0.2.1-rc.4",
-    "0.2.1-rc.3",
-    "0.2.1-rc.2",
-    "0.2.1-rc.1"
+    "0.2.2-rc.1"
   ],
-  "latestTested": "0.2.2-alpha.2",
-  "portableBaselines": [
-    "0.2.0-rc.2"
-  ],
+  "latestTested": "0.2.2-rc.1",
+  "portableBaselines": [],
   "testFixtures": {
     "historicalSupported": [
       "0.1.1-rc.2",
@@ -29,5 +23,11 @@
       "0.2.0-rc.1",
       "0.2.0-rc.2"
     ]
+  },
+  "qualification": {
+    "status": "isolated-windows-ui",
+    "sourceCommit": "66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db",
+    "runtimeVerified": true,
+    "scope": "Official npm DSH 0.2.2-rc.1 on isolated Windows profiles with generated fixtures; no existing-user or signed-desktop-package claim"
   }
 }

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { prepareEvidenceDirectory, evidenceFile, writeEvidence } from './evidence-paths.mjs'
 import { chromium } from 'playwright'
 import { expect } from 'playwright/test'
@@ -76,8 +77,8 @@ const [url, requestedEvidence] = process.argv.slice(2)
 const target = new URL(url)
 assert.ok(target.protocol === 'http:' && target.hostname === '127.0.0.1' && target.port && !target.username && !target.password, 'official acceptance requires a loopback HTTP target')
 const evidence = await prepareEvidenceDirectory(requestedEvidence)
-const browser = await chromium.launch({ headless: true, channel: process.env.DSH_TEST_BROWSER_CHANNEL || undefined })
-const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.DSH_TEST_BROWSER_EXECUTABLE || undefined, channel: process.env.DSH_TEST_BROWSER_EXECUTABLE ? undefined : process.env.DSH_TEST_BROWSER_CHANNEL || undefined })
+const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, locale: process.env.DSH_ACCEPTANCE_LOCALE || 'en-US' })
 const errors = []
 page.on('pageerror', error => errors.push(error.message))
 try {
@@ -85,9 +86,9 @@ try {
   const notice = page.getByRole('dialog', { name: /Internal Testing Notice|内测声明/ })
   await notice.waitFor({ timeout: 5000 }).catch(() => {})
   await dismissOfficialFirstRunOverlay(page)
-  const session = page.locator('[role="treeitem"]').filter({ has: page.locator('button[aria-label^="Session actions for "],button[aria-label^="会话“"]') }).first()
-  // Newer DSH can already select a blank workspace session without a row menu.
-  if (await session.count()) await session.click()
+  await page.getByRole('button', { name: /^(View options|视图选项)$/ }).click()
+  await page.getByRole('menu').getByText(/^(In one list|单列表)$/).click()
+  await page.getByRole('treeitem').filter({ has: page.getByText('Image viewer acceptance', { exact: true }) }).click()
   const fixtures = await page.evaluate(() => ['#2377aa', '#aa5523'].map(color => {
     const canvas = document.createElement('canvas')
     canvas.width = 640
@@ -114,13 +115,19 @@ try {
   const thumbnails = page.locator('[role="group"] button[title]').filter({ has: page.locator(':scope > img') })
   await thumbnails.nth(1).waitFor()
   await thumbnails.nth(1).click()
+  const officialPreview = page.getByRole('dialog').last()
+  await expect(officialPreview).toBeVisible()
+  assert.equal(await page.locator('.niv-root').count(), 0, 'normal clicks keep the official preview')
+  await page.keyboard.press('Escape')
+  await expect(officialPreview).toBeHidden()
+  const messageImage = page.locator('button[data-variant="single"],button[data-variant="tile"]').filter({ has: page.locator('img') }).nth(1)
+  await messageImage.waitFor()
+  await messageImage.focus()
+  await messageImage.click({ button: 'right' })
+  await page.getByRole('menuitem', { name: /^(Annotate image|标注图片)$/ }).click()
   const viewer = page.locator('.niv-root')
   await viewer.waitFor()
-  await page.waitForFunction(() => document.querySelector('.niv-counter')?.textContent === '2 / 2')
-  await viewer.getByRole('button', { name: /^(Previous image|上一张图片)$/ }).click()
-  await page.waitForFunction(() => document.querySelector('.niv-counter')?.textContent === '1 / 2')
-  await viewer.getByRole('button', { name: /^(Next image|下一张图片)$/ }).click()
-  await page.waitForFunction(() => document.querySelector('.niv-counter')?.textContent === '2 / 2')
+  assert.equal(await viewer.locator('.niv-counter').count(), 0, 'one explicit image is annotated')
   const before = await viewer.locator('.niv-zoom').innerText()
   await viewer.locator('.niv-stage').hover()
   // Make the fixture larger than the stage so pan exercises real overflow.
@@ -145,12 +152,18 @@ try {
   await viewer.locator('.niv-download').click()
   const download = await downloaded
   assert.equal(await download.failure(), null)
+  const originalBytes = await messageImage.locator('img').evaluate(async image => [...new Uint8Array(await (await fetch(image.currentSrc)).arrayBuffer())])
+  const saved = await evidenceFile(evidence, 'official-image-download.png')
+  await download.saveAs(saved)
+  assert.deepEqual(await readFile(saved), Buffer.from(originalBytes), 'the actual downloaded file matches the displayed original')
   await page.keyboard.press('Escape')
   await viewer.waitFor({ state: 'hidden' })
-  await page.waitForFunction(() => document.activeElement?.matches('[role="group"] button[title], [role="group"] button[title] *'))
+  await expect(messageImage).toBeFocused()
   // Keep this in the actual DSH acceptance: drawing alone did not exercise
   // the host's current-session or attachment APIs.
-  await thumbnails.nth(1).click()
+  await messageImage.focus()
+  await messageImage.click({ button: 'right' })
+  await page.getByRole('menuitem', { name: /^(Annotate image|标注图片)$/ }).click()
   await viewer.waitFor()
   await viewer.getByRole('button', { name: /^(Mark region|标记区域)$/ }).click()
   await viewer.locator('.niv-image').click()
@@ -164,7 +177,7 @@ try {
   assert.ok(draft.includes('Annotation returned to the original draft'), 'notes return to the composer')
   await page.screenshot({ path: await evidenceFile(evidence, 'official-viewer-annotation-draft.png') })
   assert.deepEqual(errors, [])
-  console.log(JSON.stringify({ ok: true, checks: ['official composer attachments', 'gallery index and navigation', 'zoom', 'pan', 'region note add/remove', 'download', 'escape and focus', 'annotation image and notes returned to draft', 'no page errors'] }))
+  console.log(JSON.stringify({ ok: true, checks: ['official composer attachments', 'official preview retained and explicit image-menu annotation', 'zoom', 'pan', 'region note add/remove', 'downloaded file bytes verified', 'escape and focus', 'annotation image and notes returned to draft', 'no page errors'] }))
 } catch (error) {
   await page.screenshot({ path: await evidenceFile(evidence, 'browser-failure.png') }).catch(() => {})
   await writeEvidence(evidence, 'browser-failure.html', await page.content())

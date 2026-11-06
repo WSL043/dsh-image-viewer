@@ -1,4 +1,4 @@
-> The `dsh-image-viewer@1.0.0-alpha.1` candidate has passed acceptance on six official DSH pages and is not published. See the [candidate evidence](docs/unreleased.md) for scope; installation below uses the npm `latest` stable release, whose support window is independent of the candidate.
+> The unpublished `dsh-image-viewer@1.0.0-alpha.1` candidate targets DSH 0.2.2-rc.1 through its public image menu. Scoped RC1 Windows UI acceptance passed; earlier six-core evidence does not qualify this revision. See [candidate scope](docs/unreleased.md). Stable installation below remains separate.
 
 <div align="center">
 
@@ -20,6 +20,10 @@ A lightweight viewer for zooming, browsing, downloading, and annotating images a
 <p align="center">
   <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-en.png" width="900" alt="DSH Image Viewer with zoom, download, and a numbered region note">
 </p>
+
+## Candidate scope
+
+Normal image clicks, previews, original-file drag/drop and ordinary image actions remain with official DSH. Right-click an image in a conversation and choose **Annotate image** to open the plugin. Only that explicit image is opened; the plugin no longer captures document clicks or reconstructs galleries from official DOM. The annotation tool retains zoom/pan and export where needed for marking. Composer thumbnails keep the official preview; RC1 does not expose its image menu there, so the plugin adds no thumbnail hook.
 
 ## Features
 
@@ -67,7 +71,7 @@ After a terminal operation, restart the corresponding profile as prompted by the
 
 Update or uninstall from the **Plugins** page. If no update action is offered, enter the target `package@version` under **Add plugin**. To uninstall from a terminal, run `dsh plugin --profile web remove dsh-image-viewer`; for official Desktop, quit the app and use the `desktop` profile as described above.
 
-Uninstalling restores DSH's built-in image viewer and does not delete conversations or images.
+Uninstalling removes the annotation action and tool; the official viewer remains available and does not delete conversations or images.
 
 ## Privacy
 
@@ -79,7 +83,7 @@ Use the [bug report form](https://github.com/WSL043/dsh-image-viewer/issues/new?
 
 ## License and quality
 
-[MIT](LICENSE). Each declared core is checked in the live interface.
+[MIT](LICENSE). Candidate validation and remaining limits are recorded in [the unreleased scope](docs/unreleased.md).
 
 ## Developers
 

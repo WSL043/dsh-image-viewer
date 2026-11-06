@@ -29,7 +29,7 @@ test('declares one optional web client plugin', async () => {
   assert.equal(pkg.peerDependenciesMeta.react.optional, true)
   assert.ok(pkg.files.includes('compatibility.json'))
   const baselines = compatibility.portableBaselines ?? []
-  assert.deepEqual(baselines, ['0.2.0-rc.2'], 'the DSH-Portable bundled core must stay supported')
+  assert.deepEqual(baselines, [], 'the independent candidate does not inherit the stable legacy baseline')
   const range = [...compatibility.releaseTargets, ...baselines.filter(version => !compatibility.releaseTargets.includes(version))].join(' || ')
   assert.deepEqual(compatibility.testFixtures.historicalSupported, ['0.1.1-rc.2', '0.1.2-rc.1'])
   assert.deepEqual(compatibility.testFixtures.historicalPreviews, ['0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.3-alpha.2', '0.1.5-alpha.1', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1', '0.1.7-alpha.2', '0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.2'])
@@ -52,7 +52,7 @@ test('declares one optional web client plugin', async () => {
     assert.doesNotMatch(guide, /0\.1\.7-alpha\.1/u, `${filename} must not claim the out-of-window core`)
   }
   const acceptance = await readFile(new URL('.github/scripts/accept-official-release.ps1', root), 'utf8')
-  assert.match(acceptance, /\[string\] \$DshVersion = '0\.2\.0-rc\.2'/u)
+  assert.match(acceptance, /\[string\] \$DshVersion = '0\.2\.2-rc\.1'/u)
   const upstreamWorkflow = await readFile(new URL('.github/workflows/upstream-compatibility.yml', root), 'utf8')
   assert.match(upstreamWorkflow, /selectLatestDshVersions/u)
   assert.match(upstreamWorkflow, /npm integrity check failed for DSH/u)
@@ -66,7 +66,8 @@ test('uses the additive shell overlay and an optional service', async () => {
   const source = await readFile(new URL('src/client.jsx', root), 'utf8')
   assert.match(source, /reflect\.provide\('nativeImageViewer'/u)
   assert.match(source, /slots\.inject\('shell\.overlay'/u)
-  assert.match(source, /document\.addEventListener\('click', onClick, true\)/u)
+  assert.match(source, /registerImageAnnotations/u)
+  assert.doesNotMatch(source, /document\.addEventListener\('click'/u)
   assert.doesNotMatch(source, /MutationObserver/u)
 })
 test('ships zoom, pan, keyboard, gallery, download, and notes', async () => {
