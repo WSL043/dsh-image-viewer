@@ -23,7 +23,7 @@ const waitReady = async () => {
   await page.waitForFunction(() => { const img = document.querySelector('.niv-image'); return !!img && img.complete && img.naturalWidth > 0 })
 }
 try {
-  browser = await chromium.launch({ headless: true })
+  browser = await chromium.launch({ headless: true, executablePath: process.env.DSH_TEST_BROWSER_EXECUTABLE || undefined, channel: process.env.DSH_TEST_BROWSER_EXECUTABLE ? undefined : process.env.DSH_TEST_BROWSER_CHANNEL || undefined })
   page = await browser.newPage({ viewport: { width: 1200, height: 800 } })
   page.setDefaultTimeout(4500)
   page.on('pageerror', error => pageErrors.push(error.message))
@@ -52,6 +52,15 @@ try {
       },
     }
     window.__viewerContext = {
+      contextMenus: { register(contribution) {
+        const open = event => {
+          const button = event.target.closest('button'); const image = button?.querySelector('img');
+          if (!image) return;
+          contribution.resolve({ url: image.currentSrc, name: image.alt }).at(0)?.run();
+        };
+        document.addEventListener('contextmenu', open);
+        return () => document.removeEventListener('contextmenu', open);
+      } },
       locale: {
         register(name, locales) { dictionaries.set(name, locales) },
         bind(name) { return key => dictionaries.get(name)?.en?.[key] ?? key },
@@ -750,7 +759,7 @@ try {
     const sessions = { list: { getSnapshot: () => ({ current: 'fixture' }) }, scope: id => id }
     window.__viewerContext.get = key => key === 'sessions' ? sessions : conversation
   })
-  await page.locator('#annotation-intake').click()
+  await page.locator('#annotation-intake').click({ button: 'right' })
   await waitReady()
   await page.getByRole('button', { name: 'Mark region', exact: true }).click()
   await page.locator('.niv-image').click({ position: { x: 180, y: 150 } })
@@ -768,9 +777,9 @@ try {
   assert.equal(draftEvidence.type, 'image/png')
   assert.deepEqual([draftEvidence.width, draftEvidence.height], [640, 480])
   assert.equal(draftEvidence.ids.length, 1)
-  checks.push('native image click, annotation, close, rendered PNG and notes enter existing draft without send')
+  checks.push('official menu contribution, annotation, close, rendered PNG and notes enter existing draft without send')
 
-  // Browser fixture, not an official DSH host: use the existing native-click
+  // Browser fixture, not an official DSH host: use the public menu
   // bridge and a real textarea, with only the source read held behind a gate.
   await page.evaluate(() => {
     const makeButton = (id, name, color) => {
@@ -811,7 +820,7 @@ try {
       return response
     }
   })
-  await page.locator('#annotation-cancel-intake').click()
+  await page.locator('#annotation-cancel-intake').click({ button: 'right' })
   await waitReady()
   await page.getByRole('button', { name: 'Mark region', exact: true }).click()
   await page.locator('.niv-image').click({ position: { x: 180, y: 150 } })
@@ -830,7 +839,7 @@ try {
     const { aborted, finished, mutations } = window.__annotationCancel
     return { aborted, finished, mutations }
   }), { aborted: true, finished: false, mutations: 0 })
-  await page.locator('#annotation-after-cancel').click()
+  await page.locator('#annotation-after-cancel').click({ button: 'right' })
   await waitReady()
   await page.evaluate(() => { window.__annotationCancel.finish() })
   await page.waitForFunction(() => window.__annotationCancel.finished)
@@ -841,13 +850,13 @@ try {
   assert.equal(await page.evaluate(() => window.__annotationCancel.mutations), 0)
   await page.evaluate(() => { window.__annotationCancel.restoreFetch() })
   await close()
-  await page.locator('#annotation-cancel-intake').click()
+  await page.locator('#annotation-cancel-intake').click({ button: 'right' })
   await waitReady()
   await page.getByRole('button', { name: 'Region 1', exact: true }).click()
   assert.equal(await page.locator('.niv-inline-note textarea').inputValue(), 'Keep this note after cancellation')
   await page.locator('.niv-close-floating').click()
   await page.locator('.niv-root').waitFor({ state: 'hidden' })
-  checks.push('browser fixture: native clicks and keyboard cancel a pending annotation read before completion; late completion preserves the reopened gallery, existing draft and region note')
+  checks.push('browser fixture: menu actions and keyboard cancel a pending annotation read before completion; late completion preserves the reopened gallery, existing draft and region note')
   assert.deepEqual(pageErrors, [])
   const result = { ok: true, checks }
   await writeEvidence(evidence, 'viewer-browser-result.json', `${JSON.stringify(result)}\n`)

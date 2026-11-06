@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string] $PackagePath,
-    [string] $DshVersion = '0.2.0-rc.2',
+    [string] $DshVersion = '0.2.2-rc.1',
     [string] $Profile = 'web',
     [string] $DshRunner = 'pnpm',
     [int] $StartupTimeoutSeconds = 45,
@@ -101,11 +101,10 @@ try {
     Push-Location -LiteralPath $workspace
     Invoke-Dsh @('plugin', '--profile', $Profile, 'add', $package, '--loglevel', 'error')
     Assert-InstalledOnce
-    $ErrorActionPreference = 'Continue'
-    try { & $runner.Source @runnerPrefix --profile headless 'Image viewer synthetic acceptance' *> (Join-Path $acceptanceRoot 'seed.log') }
-    finally { $ErrorActionPreference = 'Stop' }
-    $transcripts = @(Get-ChildItem -LiteralPath (Join-Path $env:DSH_HOME 'sessions') -Recurse -File | Where-Object { $_.Name -match '^session(\.v[1-9]\d*)?\.jsonl(\.zstd)?$' })
-    if ($transcripts.Count -ne 1) { throw 'Official DSH did not create exactly one synthetic session; inspect seed.log.' }
+    $fixture = Join-Path $acceptanceRoot 'fixture-plugin'
+    & node (Join-Path $PSScriptRoot '../../scripts/create-official-fixture.mjs') $fixture
+    if ($LASTEXITCODE -ne 0) { throw 'Could not prepare isolated image fixture.' }
+    Invoke-Dsh @('plugin', '--profile', $Profile, 'add', $fixture, '--loglevel', 'error')
     Start-And-ProbeWeb
     Invoke-Dsh @('plugin', '--profile', $Profile, 'remove', 'dsh-image-viewer', '--loglevel', 'error')
     Assert-Removed

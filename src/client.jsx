@@ -12,19 +12,19 @@ const IconCopyOutline16 = primitives.IconCopyOutlineRegular ?? primitives.IconCo
 const IconDownloadOutline16 = primitives.IconDownloadOutlineRegular ?? primitives.IconDownloadOutline16
 const IconEditOutline16 = primitives.IconEditOutlineRegular ?? primitives.IconEditOutline16
 const IconFullscreenOutline16 = primitives.IconFullscreenOutlineRegular ?? primitives.IconFullscreenOutline16
-import {
-  imageItemsForButton, NativeImageViewerService, nativeImageButton,
-} from './viewer.js'
+import { NativeImageViewerService } from './viewer.js'
+import { registerImageAnnotations } from './official-image-actions.js'
 import { CSS as VIEWER_CSS } from './styles.js'
 import { useImageTransform } from './image-transform.js'
 import { downloadPercent, readImageBlob } from './image-download.js'
 import { createAnnotationCommit } from './annotation-draft.js'
 
 export const name = 'dsh-image-viewer'
-export const inject = ['locale', 'slots']
+export const inject = ['locale', 'slots', 'contextMenus']
 
 const LOCALES = {
   en: {
+    annotateImage: 'Annotate image',
     addingDraft: 'Adding image and notes to draft…', draftFailed: 'Could not add to draft. Return to the original session and keep the composer editable, then close to retry.', closeWithoutDraft: 'Close without adding',
     dialog: 'Image viewer', close: 'Close', fit: 'Fit', actual: '100%', download: 'Download',
     annotate: 'Mark region', cancelAnnotate: 'Cancel marking', regions: 'Region notes', regionHint: 'Click a point on the image, then add a note.',
@@ -34,6 +34,7 @@ const LOCALES = {
     cancelDownload: 'Cancel download', cancel: 'Cancel', loading: 'Loading image…', loadFailed: 'Image could not be loaded.', retry: 'Retry', copyFailed: 'Copy failed. Try again.',
   },
   zh: {
+    annotateImage: '标注图片',
     addingDraft: '正在把图片和备注加入草稿…', draftFailed: '未能加入草稿。请回到原会话并确保输入框可编辑，再关闭以重试。', closeWithoutDraft: '仅关闭，不加入草稿',
     dialog: '图片查看器', close: '关闭', fit: '适应窗口', actual: '原始大小', download: '下载',
     annotate: '标记区域', cancelAnnotate: '取消标记', regions: '区域备注', regionHint: '点击图片中的位置，然后填写备注。',
@@ -327,23 +328,6 @@ function ViewerOverlay({ service, t }) {
   </div>
 }
 
-function installOfficialImageBridge(service, ctx, t) {
-  const onClick = event => {
-    const match = nativeImageButton(event.target)
-    if (match === undefined) return
-    const { items, index } = imageItemsForButton(match)
-    event.preventDefault()
-    event.stopPropagation()
-    event.stopImmediatePropagation()
-    const commitAnnotations = createAnnotationCommit(ctx, {
-      readBlob: (src, { signal }) => readImageBlob(src, { signal, onProgress: () => {} }),
-      formatNotes: annotations => noteText(annotations, t),
-    })
-    service.open({ items, index, opener: match.button, source: 'dsh-native', annotations: true, commitAnnotations })
-  }
-  document.addEventListener('click', onClick, true)
-  return () => { document.removeEventListener('click', onClick, true) }
-}
 
 export function apply(ctx) {
   const service = new NativeImageViewerService()
@@ -358,7 +342,13 @@ export function apply(ctx) {
   }, `${name}: styles`)
   ctx.effect(() => {
     const disposeService = ctx.reflect.provide('nativeImageViewer', service)
-    const disposeBridge = installOfficialImageBridge(service, ctx, t)
+    const disposeBridge = registerImageAnnotations(ctx, service, {
+      label: () => t('annotateImage'),
+      createCommit: () => createAnnotationCommit(ctx, {
+        readBlob: (src, { signal } = {}) => readImageBlob(src, { signal, onProgress: () => {} }),
+        formatNotes: annotations => noteText(annotations, t),
+      }),
+    })
     return () => { disposeBridge(); service.dispose(); void disposeService() }
   }, `${name}: optional viewer service and native image bridge`)
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({

@@ -1,4 +1,4 @@
-> Development candidate: `dsh-image-viewer@1.0.0-alpha.1` has passed the scoped six-version official-page acceptance linked in docs/unreleased.md and is not published. Do not substitute it for the npm `latest` stable release below.
+> Development candidate: `dsh-image-viewer@1.0.0-alpha.1` targets only DSH 0.2.2-rc.1 public context-menu APIs. Scoped RC1 Windows UI acceptance passed and this candidate is unpublished. Earlier multi-core acceptance does not qualify this revision.
 
 > Stable support and installation protections: [stable README](https://github.com/WSL043/dsh-image-viewer/blob/stable/README.md) and [stable AGENTS.md](https://github.com/WSL043/dsh-image-viewer/blob/stable/AGENTS.md). Candidate compatibility does not carry over.
 

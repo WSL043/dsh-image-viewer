@@ -1,4 +1,4 @@
-> `dsh-image-viewer@1.0.0-alpha.1` 候选已通过六版官方 DSH 页面验收，尚未发布。验收范围见[候选记录](docs/unreleased.md)；下方安装说明使用 npm `latest` 稳定版，其支持窗口独立于候选。
+> 未发布候选 `dsh-image-viewer@1.0.0-alpha.1` 改用 DSH 0.2.2-rc.1 的公开图片菜单；RC1 Windows 隔离 UI 验收已通过，旧六版证据不适用于本次修改。详见[候选范围](docs/unreleased.md)。下方稳定版安装说明保持独立。
 
 <div align="center">
 
@@ -20,6 +20,10 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/WSL043/dsh-image-viewer/main/docs/assets/image-viewer-zh.png" width="900" alt="DSH 图片查看器展示缩放、下载与区域备注">
 </p>
+
+## 候选范围
+
+普通图片点击、预览、原文件拖放和常规操作保留官方 DSH 实现。右键会话中的图片选择“标注图片”才打开插件，只处理明确选择的图片；不再截获文档点击或解析官方 DOM 拼接图库。标注工具保留必要的缩放、拖动与导出。RC1 的草稿缩略图尚未提供公开图片菜单，插件不为它补 DOM 钩子，仍用官方预览。
 
 ## 功能
 
@@ -67,7 +71,7 @@ dsh plugin --profile web add dsh-image-viewer@latest
 
 在 **插件** 页面更新或卸载；没有更新操作时，在“添加插件”中输入目标 `包名@版本`。终端卸载可用 `dsh plugin --profile web remove dsh-image-viewer`；官方 Desktop 按上方说明退出应用并将 profile 换为 `desktop`。
 
-卸载会恢复 DSH 内置图片查看器，不会删除会话或图片。
+卸载仅移除标注入口和工具，官方查看器始终保留；不会删除会话或图片。
 
 ## 隐私
 
@@ -79,7 +83,7 @@ dsh plugin --profile web add dsh-image-viewer@latest
 
 ## 许可证与质量
 
-[MIT](LICENSE)。每个声明支持的内核均已完成真实界面核验。
+[MIT](LICENSE)。候选验收和剩余限制见[未发布记录](docs/unreleased.md)。
 
 ## 开发者
 
